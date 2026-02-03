@@ -163,6 +163,11 @@
   },
   "scripts": {
     "build": "gulp",
+    "build:fast": "gulp build --no-webapps",
+    "build:core": "gulp pxtlib pxtcompiler pxtsim pxtpy pxteditor pxtblocks cli pxtjs",
+    "build:watch": "gulp watch",
+    "build:watch-cli": "gulp watchCli",
+    "dev": "gulp watch --no-webapps",
     "test": "gulp travis",
     "test:publish": "gulp travis --publish",
     "clean": "gulp clean",

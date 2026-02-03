@@ -202,7 +202,10 @@ export class EditorToolbar extends data.Component<ISettingsProps, EditorToolbarS
         // Matching the tick in the call to compile() above for historical reasons
         pxt.tickEvent("editortools.download", { collapsed: this.getCollapsedState() }, { interactiveConsent: true });
         pxt.tickEvent("editortools.downloadasfile", { collapsed: this.getCollapsedState() }, { interactiveConsent: true });
-        (this.props.parent as ProjectView).compile(true);
+        // CC_TODO
+        // (this.props.parent as ProjectView).compile(true);
+        // Download project files as a package instead of compiling
+        await (this.props.parent as ProjectView).saveProjectToFileAsync();
     }
 
     protected onPairClick = () => {
@@ -264,106 +267,53 @@ export class EditorToolbar extends data.Component<ISettingsProps, EditorToolbarS
     }
 
     protected getCompileButton(view: View): JSX.Element[] {
-        const collapsed = true; // TODO: Cleanup this
         const targetTheme = pxt.appTarget.appTheme;
         const { compiling, isSaving } = this.props.parent.state;
         const { compileState } = this.state;
-        const compileTooltip = lf("Download your code to the {0}", targetTheme.boardName);
+        const compileTooltip = lf("Download project files");
 
         let downloadText: string;
         if (compileState === "success") {
-            downloadText = targetTheme.useUploadMessage ? lf("Uploaded!") : lf("Downloaded!")
+            downloadText = lf("Downloaded!")
         }
         else {
-            downloadText = targetTheme.useUploadMessage ? lf("Upload") : lf("Download")
+            downloadText = lf("Download")
         }
 
-
-        const boards = pxt.appTarget.simulator && !!pxt.appTarget.simulator.dynamicBoardDefinition;
-        const editorSupportsWebUSB = pxt.appTarget?.compile?.webUSB;
-        const hardwareVariantSelected = (pxt.appTarget.alwaysMultiVariant || !pxt.appTarget.variants || !!(pxt.getActiveHwVariant()))
-        const webUSBSupported = pxt.usb.isEnabled && editorSupportsWebUSB;
-        const showUsbNotSupportedHint = editorSupportsWebUSB
-            && !pxt.usb.isEnabled
-            && hardwareVariantSelected
-            && pxt.shell.getControllerMode() !== pxt.shell.ControllerMode.App
-            && !pxt.BrowserUtils.isPxtElectron()
-            && (pxt.BrowserUtils.isChromiumEdge() || pxt.BrowserUtils.isChrome());
-        const packetioConnected = !!this.getData("packetio:connected");
-        const packetioConnecting = !!this.getData("packetio:connecting");
-        const packetioIcon = this.getData("packetio:icon") as string;
-        const hideFileDownloadIcon = view === View.Computer && this.shouldShowPairingDialogOnDownload();
         const fileDownloadIcon = targetTheme.downloadIcon || "xicon file-download";
+        const successIcon = "xicon file-download-check";
+        const downloadIcon = (compileState === "success" && successIcon) || fileDownloadIcon;
 
-        const successIcon = (packetioConnected && pxt.appTarget.appTheme.downloadDialogTheme?.deviceSuccessIcon)
-            || "xicon file-download-check";
-        const downloadIcon = (!!packetioConnecting && "ping " + packetioIcon)
-            || (compileState === "success" && successIcon)
-            || (!!packetioConnected && packetioIcon)
-            || (!hideFileDownloadIcon && fileDownloadIcon);
-
-        let downloadButtonClasses = "left attached ";
-        const downloadButtonIcon = "ellipsis";
-        let hwIconClasses = "";
-        let displayRight = false;
+        let downloadButtonClasses = "";
         if (isSaving) {
             downloadButtonClasses += "disabled ";
         } else if (compiling) {
             downloadButtonClasses += "loading disabled ";
         }
-        if (packetioConnected)
-            downloadButtonClasses += "connected ";
-        else if (packetioConnecting)
-            downloadButtonClasses += "connecting ";
+        
         switch (view) {
             case View.Mobile:
                 downloadButtonClasses += "download-button-full ";
-                displayRight = collapsed;
                 break;
             case View.Tablet:
-                downloadButtonClasses += `download-button-full ${!collapsed ? 'large fluid' : ''} `;
-                hwIconClasses = !collapsed ? "large" : "";
-                displayRight = collapsed;
+                downloadButtonClasses += "download-button-full large fluid ";
                 break;
             case View.Computer:
             default:
                 downloadButtonClasses += "large fluid ";
-                hwIconClasses = "large";
         }
 
-        // Download button action may be overridden by the target
-        const downloadClickHandler = pxt.commands.onDownloadButtonClick || this.onDownloadButtonClick;
-
+        // Single button that downloads project files directly
         let el = [];
-        el.push(<EditorToolbarButton key="downloadbutton" icon={downloadIcon} className={`primary download-button ${downloadButtonClasses}`} text={view != View.Mobile ? downloadText : undefined} title={compileTooltip} onButtonClick={downloadClickHandler} view='computer' />)
-
-        const deviceName = pxt.hwName || pxt.appTarget.appTheme.boardNickname || lf("device");
-        const tooltip = pxt.hwName
-            || (packetioConnected && lf("Connected to {0}", deviceName))
-            || (packetioConnecting && lf("Connecting..."))
-            || (boards ? lf("Click to select hardware") : (webUSBSupported ? lf("Click for one-click downloads.") : undefined));
-
-        const hardwareMenuText = view == View.Mobile ? lf("Hardware") : lf("Choose Hardware");
-        const downloadMenuText = view == View.Mobile ? (pxt.hwName || lf("Download")) : lf("Download as File");
-        const downloadHelp = pxt.appTarget.appTheme.downloadDialogTheme?.downloadMenuHelpURL;
-
-        const extMenuItems: sui.ItemProps[] = pxt.commands.getDownloadMenuItems?.() || [];
-
-        // Add the ... menu
-        const usbIcon = pxt.appTarget.appTheme.downloadDialogTheme?.deviceIcon || "usb";
-        el.push(
-            <sui.DropdownMenu key="downloadmenu" role="menuitem" icon={`${downloadButtonIcon} horizontal ${hwIconClasses}`} title={lf("Download options")} className={`${hwIconClasses} right attached editortools-btn hw-button button`} dataTooltip={tooltip} displayAbove={true} displayRight={displayRight} closeOnItemClick={true} onShow={
-                () => this.forceUpdate() // force update to refresh extMenuItems
-            }>
-                {webUSBSupported && !packetioConnected && <sui.Item role="menuitem" icon={usbIcon} text={lf("Connect Device")} tabIndex={-1} onClick={this.onPairClick} />}
-                {showUsbNotSupportedHint && <sui.Item role="menuitem" icon={usbIcon} text={lf("Connect Device")} tabIndex={-1} onClick={this.onCannotPairClick} />}
-                {webUSBSupported && (packetioConnecting || packetioConnected) && <sui.Item role="menuitem" icon={usbIcon} text={lf("Disconnect")} tabIndex={-1} onClick={this.onDisconnectClick} />}
-                {boards && <sui.Item role="menuitem" icon="microchip" text={hardwareMenuText} tabIndex={-1} onClick={this.onHwItemClick} />}
-                {!extMenuItems?.length && <sui.Item role="menuitem" icon="xicon file-download" text={downloadMenuText} tabIndex={-1} onClick={this.onFileDownloadClick} />}
-                {extMenuItems.map((props, index) => <sui.Item key={index} role="menuitem" tabIndex={-1} {...props} />)}
-                {downloadHelp && <sui.Item role="menuitem" icon="help circle" text={lf("Help")} tabIndex={-1} onClick={this.onHelpClick} />}
-            </sui.DropdownMenu>
-        )
+        el.push(<EditorToolbarButton
+            key="downloadbutton"
+            icon={downloadIcon}
+            className={`primary download-button ${downloadButtonClasses}`}
+            text={view != View.Mobile ? downloadText : undefined}
+            title={compileTooltip}
+            onButtonClick={this.onFileDownloadClick}
+            view='computer'
+        />)
 
         return el;
     }
@@ -440,14 +390,14 @@ export class EditorToolbar extends data.Component<ISettingsProps, EditorToolbarS
                     {this.getCompileButton(mobile)}
                 </div>}
             </div>
-            {(showProjectRename || showGithub || identity.CloudSaveStatus.wouldRender(header.id)) &&
+            {/* {(showProjectRename || showGithub || identity.CloudSaveStatus.wouldRender(header.id)) &&
                 <div id="projectNameArea" className="ui column items">
                     <div className={`ui right ${showSave ? "labeled" : ""} input projectname-input projectname-computer`}>
                         {showProjectRename && this.getSaveInput(showSave, "fileNameInput2", projectName, showProjectRenameReadonly)}
                         {showGithub && <githubbutton.GithubButton parent={this.props.parent} key={`githubbtn${computer}`} />}
                         <identity.CloudSaveStatus headerId={header.id} />
                     </div>
-                </div>}
+                </div>} */}
             <div id="editorToolbarArea" role="menubar" className="ui column items">
                 {showUndoRedo && <div className="ui icon buttons">{this.getUndoRedo(computer)}</div>}
                 {showZoomControls && <div className="ui icon buttons mobile hide">{this.getZoomControl(computer)}</div>}

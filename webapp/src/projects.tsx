@@ -322,10 +322,11 @@ export class ProjectSettingsMenu extends data.Component<ProjectSettingsMenuProps
                 {lf("Disconnect GitHub")}
             </div>}
             {showDivider && <div className="ui divider"></div>}
-            {reportAbuse ? <sui.Item role="menuitem" icon="warning circle" text={lf("Report Abuse...")} onClick={this.showReportAbuse} /> : undefined}
-            <sui.Item role="menuitem" icon='sign out' text={lf("Reset")} onClick={this.showResetDialog} />
+            {/* {reportAbuse ? <sui.Item role="menuitem" icon="warning circle" text={lf("Report Abuse...")} onClick={this.showReportAbuse} /> : undefined} */}
+            {/* <sui.Item role="menuitem" icon='sign out' text={lf("Reset")} onClick={this.showResetDialog} /> */}
             <sui.Item role="menuitem" text={lf("About...")} onClick={this.showAboutDialog} />
-            {showFeedbackOption ? <sui.Item role="menuitem" icon="comment" text={lf("Feedback")} onClick={this.showFeedbackDialog} /> : undefined}
+            <sui.Item role="menuitem" icon="comment" text={lf("Feedback")} onClick={this.showFeedbackDialog} />
+            {/* {showFeedbackOption ? <sui.Item role="menuitem" icon="comment" text={lf("Feedback")} onClick={this.showFeedbackDialog} /> : undefined} */}
         </sui.DropdownMenu>;
     }
 }
@@ -1509,7 +1510,8 @@ export class ImportDialog extends data.Component<ISettingsProps, ImportDialogSta
         let cardCount = showOpenFiles ? 1 : 0;
         cardCount += showImport ? 1 : 0;
         cardCount += showCreateGithubRepo ? 1 : 0;
-        const cardClass = cardCount === 1 ? "one" : cardCount === 2 ? "two" : "three";
+        // const cardClass = cardCount === 1 ? "one" : cardCount === 2 ? "two" : "three";
+        const cardClass = "one";
         return (
             <sui.Modal isOpen={visible} className={classes} size="small"
                 onClose={this.close} dimmer={true}
@@ -1528,7 +1530,7 @@ export class ImportDialog extends data.Component<ISettingsProps, ImportDialogSta
                             description={lf("Open files from your computer")}
                             onClick={this.importHex}
                         />}
-                    {showImport &&
+                    {/* {showImport &&
                         <codecard.CodeCardView
                             ariaLabel={lf("Open a shared project URL or GitHub repo")}
                             role="button"
@@ -1538,8 +1540,8 @@ export class ImportDialog extends data.Component<ISettingsProps, ImportDialogSta
                             name={lf("Import URL...")}
                             description={lf("Open a shared project URL or GitHub repo")}
                             onClick={this.importUrl}
-                        />}
-                    {showCreateGithubRepo &&
+                        />} */}
+                    {/* {showCreateGithubRepo &&
                         <codecard.CodeCardView
                             ariaLabel={lf("Clone or create your own GitHub repository")}
                             role="button"
@@ -1549,7 +1551,7 @@ export class ImportDialog extends data.Component<ISettingsProps, ImportDialogSta
                             name={lf("Your GitHub Repo...")}
                             description={lf("Clone or create your own GitHub repository")}
                             onClick={this.cloneGithub}
-                        />}
+                        />} */}
                 </div>
             </sui.Modal>
         )

@@ -561,25 +561,25 @@ export class SettingsMenu extends data.Component<SettingsMenuProps, SettingsMenu
             items.push({ role: "separator" });
         }
 
-        if (reportAbuse) {
-            items.push({
-                role: "menuitem",
-                leftIcon: "icon warning circle",
-                label: lf("Report Abuse..."),
-                title: lf("Report Abuse..."),
-                onClick: this.showReportAbuse
-            });
-        }
+        // if (reportAbuse) {
+        //     items.push({
+        //         role: "menuitem",
+        //         leftIcon: "icon warning circle",
+        //         label: lf("Report Abuse..."),
+        //         title: lf("Report Abuse..."),
+        //         onClick: this.showReportAbuse
+        //     });
+        // }
 
-        if (!isController) {
-            items.push({
-                role: "menuitem",
-                leftIcon: "icon sign out",
-                label: lf("Reset"),
-                title: lf("Reset"),
-                onClick: this.showResetDialog
-            });
-        }
+        // if (!isController) {
+        //     items.push({
+        //         role: "menuitem",
+        //         leftIcon: "icon sign out",
+        //         label: lf("Reset"),
+        //         title: lf("Reset"),
+        //         onClick: this.showResetDialog
+        //     });
+        // }
 
         items.push({
             role: "menuitem",
@@ -588,7 +588,7 @@ export class SettingsMenu extends data.Component<SettingsMenuProps, SettingsMenu
             onClick: this.showAboutDialog
         });
 
-        if (showFeedbackOption) {
+        // if (showFeedbackOption) {
             items.push({
                 role: "menuitem",
                 leftIcon: "icon comment",
@@ -596,7 +596,7 @@ export class SettingsMenu extends data.Component<SettingsMenuProps, SettingsMenu
                 title: lf("Feedback"),
                 onClick: this.showFeedbackDialog
             });
-        }
+        // }
 
         return (
             <MenuDropdown
