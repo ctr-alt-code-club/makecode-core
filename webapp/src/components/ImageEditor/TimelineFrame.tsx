@@ -109,7 +109,7 @@ export class TimelineFrame extends React.Component<TimelineFrameProps, TimelineF
             if (this.intervalId) clearInterval(this.intervalId);
             this.intervalId = setInterval(() => this.setState({
                 index: (this.state.index + 1) % this.props.frames.length
-            }), interval)
+            }), interval) as any;
             this.intervalcurrent = interval;
         }
         else if (!shouldAnimate && this.intervalId) {

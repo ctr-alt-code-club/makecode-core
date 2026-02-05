@@ -14,6 +14,8 @@ import { sendUpdateFeedbackTheme } from "../../react-common/components/controls/
 import { ThemeManager } from "../../react-common/components/theming/themeManager";
 import { ShareLinkDialog } from "../../react-common/components/share/ShareLinkDialog";
 import { EditorToggle } from "../../react-common/components/controls/EditorToggle";
+import { syncFromCloud } from "./ctrl-alt-code-custom/syncFromCloud";
+
 
 import IProjectView = pxt.editor.IProjectView;
 import ISettingsProps = pxt.editor.ISettingsProps;
@@ -41,6 +43,7 @@ export class Projects extends auth.Component<ISettingsProps, ProjectsState> {
         this.chgHeader = this.chgHeader.bind(this);
         this.chgGallery = this.chgGallery.bind(this);
         this.importProject = this.importProject.bind(this);
+        this.cloudSync = this.cloudSync.bind(this)
         this.showScriptManager = this.showScriptManager.bind(this);
         this.setSelected = this.setSelected.bind(this);
     }
@@ -117,6 +120,11 @@ export class Projects extends auth.Component<ISettingsProps, ProjectsState> {
         this.props.parent.importProjectDialog();
     }
 
+    cloudSync() {
+        pxt.tickEvent("projects.cloudsync", undefined, { interactiveConsent: true });
+        syncFromCloud()
+    }
+
     showScriptManager() {
         pxt.tickEvent("projects.showall.header", undefined, { interactiveConsent: true });
         this.props.parent.showScriptManager();
@@ -164,6 +172,8 @@ export class Projects extends auth.Component<ISettingsProps, ProjectsState> {
                     <div className="column right aligned" style={{ zIndex: 1 }}>
                         {pxt.appTarget.compile || (pxt.appTarget.cloud && pxt.appTarget.cloud.sharing && pxt.appTarget.cloud.importing) ?
                             <sui.Button key="import" icon="upload" className="import-dialog-btn neutral" textClass="landscape only" text={lf("Import")} title={lf("Import a project")} onClick={this.importProject} /> : undefined}
+                        {pxt.appTarget.compile || (pxt.appTarget.cloud && pxt.appTarget.cloud.sharing && pxt.appTarget.cloud.importing) ?
+                            <sui.Button key="cloud-sync" icon="download" className="cloud-sync-btn neutral" textClass="landscape only" text={lf("Cloud Sync")} title={lf("Cloud Sync Files")} onClick={this.cloudSync} /> : undefined}
                     </div>
                 </div>
                 <div className="content">

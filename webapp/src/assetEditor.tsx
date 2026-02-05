@@ -124,7 +124,7 @@ export class AssetEditor extends React.Component<{}, AssetEditorState> {
             kind: "ready"
         });
         tickAssetEditorEvent("asset-editor-shown");
-        this.pollingInterval = setInterval(this.pollForUpdates, 200);
+        this.pollingInterval = setInterval(this.pollForUpdates, 200) as any;
         // TODO: one of these? Probably would need it to directly save
         // & send up message instead of sending a 'save now' type msg
         // window.addEventListener("unload", this.pollForUpdates)

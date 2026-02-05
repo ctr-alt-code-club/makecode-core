@@ -35,7 +35,7 @@ const AssetImagePreview = (props: AssetPreviewProps) => {
                     ref.current.src = asset.framePreviewURIs[currentFrame];
                 }
                 currentFrame = (currentFrame + 1) % asset.framePreviewURIs.length;
-            }, Math.max(asset.interval, 100));
+            }, Math.max(asset.interval, 100)) as any;
         }
 
         const mouseLeave = () => {

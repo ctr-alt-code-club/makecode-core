@@ -136,7 +136,7 @@ function createSimRecorderRef() {
             if (ref.state === "recording") {
                 stopRecordingAsync();
             }
-        }, MAX_RECORD_TIME_MS)
+        }, MAX_RECORD_TIME_MS) as any;
     };
 
     const stopRecordingAsync = async () => {

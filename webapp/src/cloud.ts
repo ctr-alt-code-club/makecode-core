@@ -643,7 +643,7 @@ async function onHeaderChangeDebouncer(h: Header) {
         await doAfter()
     } else {
         // debounce
-        onHeaderChangeTimeout = setTimeout(doAfter, CLOUDSAVE_DEBOUNCE_MS);
+        onHeaderChangeTimeout = setTimeout(doAfter, CLOUDSAVE_DEBOUNCE_MS) as any;
     }
 }
 

@@ -126,7 +126,7 @@ export function showLoadingAsync(id: string, msg: string, operation: Promise<any
     clearTimeout(asyncLoadingTimeout[id]);
     asyncLoadingTimeout[id] = setTimeout(function () {
         showLoading(id, msg);
-    }, delay);
+    }, delay) as any;
 
     return operation.finally(() => {
         cancelAsyncLoading(id);

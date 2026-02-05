@@ -34,7 +34,7 @@ export class GenericBanner extends data.Component<GenericBannerProps, {}> {
 
     componentDidMount() {
         if (this.doneSleeping) {
-            this.timer = setTimeout(() => this.show(), this.delayTime);
+            this.timer = setTimeout(() => this.show(), this.delayTime) as any;
         }
     }
 
@@ -54,7 +54,7 @@ export class GenericBanner extends data.Component<GenericBannerProps, {}> {
     show() {
         pxt.tickEvent(`notificationBanner.${this.props.id}.show`);
         if (this.props.displayTime) {
-            this.timer = setTimeout(() => this.hide("automatic"), this.delayTime + this.props.displayTime);
+            this.timer = setTimeout(() => this.hide("automatic"), this.delayTime + this.props.displayTime) as any;
         }
         this.props.parent.setBannerVisible(true);
         this.render();

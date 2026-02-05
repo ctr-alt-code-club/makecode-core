@@ -9,6 +9,7 @@ import * as identity from "./identity";
 import { ProjectView } from "./app";
 import { userPrefersDownloadFlagSet } from "./webusb";
 import { dialogAsync, hideDialog } from "./core";
+import { handleCloudSaveWithData } from "./ctrl-alt-code-custom/cloudSaveButton";
 
 import ISettingsProps = pxt.editor.ISettingsProps;
 import SimState = pxt.editor.SimState;
@@ -33,6 +34,7 @@ export class EditorToolbar extends data.Component<ISettingsProps, EditorToolbarS
         this.saveProjectName = this.saveProjectName.bind(this);
         this.compile = this.compile.bind(this);
         this.saveFile = this.saveFile.bind(this);
+        this.cloudSaveFile = this.cloudSaveFile.bind(this);
         this.undo = this.undo.bind(this);
         this.redo = this.redo.bind(this);
         this.zoomIn = this.zoomIn.bind(this);
@@ -59,6 +61,15 @@ export class EditorToolbar extends data.Component<ISettingsProps, EditorToolbarS
     saveFile(view?: string) {
         pxt.tickEvent("editortools.save", { view: view, collapsed: this.getCollapsedState() }, { interactiveConsent: true });
         this.props.parent.saveAndCompile();
+    }
+
+    async cloudSaveFile(view?: string) {
+        pxt.tickEvent("editortools.cloud", { view: view, collapsed: this.getCollapsedState() }, { interactiveConsent: true });
+        const output = await (this.props.parent as ProjectView).exportProjectToFileAsync()
+        const projectName = this.props.parent.state.header.name;
+        handleCloudSaveWithData(projectName, output);
+        // Optionally also call the regular save
+        // this.props.parent.saveAndCompile();
     }
 
     undo(view?: string) {
@@ -118,7 +129,7 @@ export class EditorToolbar extends data.Component<ISettingsProps, EditorToolbarS
                 if (this.compileTimeout) clearTimeout(this.compileTimeout);
                 this.compileTimeout = setTimeout(() => {
                     if (this.state?.compileState === "success") this.setState({ compileState: null });
-                }, 2000)
+                }, 2000) as any;
             }
         }
     }
@@ -159,6 +170,36 @@ export class EditorToolbar extends data.Component<ISettingsProps, EditorToolbarS
         }
 
         return saveInput;
+    }
+
+    private getSaveButton(view: View): JSX.Element {
+        let saveButtonClasses = this.props.parent.state.isSaving ? "loading disabled" : "";
+
+        switch (view) {
+            case View.Mobile:
+                saveButtonClasses += "download-button-full ";
+                break;
+            case View.Tablet:
+                saveButtonClasses += "download-button-full large fluid ";
+                break;
+            case View.Computer:
+            default:
+                saveButtonClasses += "large fluid ";
+        }
+
+        return (
+            <EditorToolbarButton
+                role="button"
+                icon='cloud upload'
+                text={view != View.Mobile ? "Save to Cloud" : undefined}
+                className={`primary custom-save-button ${saveButtonClasses}`}
+                title={lf("Cloud Save")}
+                ariaLabel={lf("Cloud Save")}
+                onButtonClick={this.cloudSaveFile}
+                view={this.getViewString(view)}
+                key={`cloudsave${view}`}
+            />
+        );
     }
 
     private getZoomControl(view: View): JSX.Element[] {
@@ -388,6 +429,14 @@ export class EditorToolbar extends data.Component<ISettingsProps, EditorToolbarS
                 </div>}
                 {showCompileBtn && <div className="ui portrait only">
                     {this.getCompileButton(mobile)}
+                </div>}
+            </div>
+            <div id="saveArea" role="menubar" className="ui column items">
+                {showCompileBtn && <div className="ui item portrait hide">
+                    {this.getSaveButton(computer)}
+                </div>}
+                {showCompileBtn && <div className="ui portrait only">
+                    {this.getSaveButton(mobile)}
                 </div>}
             </div>
             {/* {(showProjectRename || showGithub || identity.CloudSaveStatus.wouldRender(header.id)) &&
