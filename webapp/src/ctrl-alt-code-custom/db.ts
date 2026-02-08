@@ -12,7 +12,7 @@
  */
 let API_BASE_URL = (typeof process !== 'undefined' && process.env && process.env.API_BASE_URL)
     ? process.env.API_BASE_URL
-    : 'http://localhost:3001';
+    : 'https://arcade-store.ctrl-alt-code.uk';
 
 /**
  * Interface for project data stored in the database

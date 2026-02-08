@@ -167,6 +167,7 @@
     "build:core": "gulp pxtlib pxtcompiler pxtsim pxtpy pxteditor pxtblocks cli pxtjs",
     "build:watch": "gulp watch",
     "build:watch-cli": "gulp watchCli",
+    "build:production": "export PXT_ENV=production; gulp production",
     "dev": "gulp watch --no-webapps",
     "test": "gulp travis",
     "test:publish": "gulp travis --publish",
