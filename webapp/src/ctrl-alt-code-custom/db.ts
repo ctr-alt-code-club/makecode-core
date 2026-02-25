@@ -278,5 +278,3 @@ export function setApiBaseUrl(url: string): void {
 export function getApiBaseUrl(): string {
     return API_BASE_URL;
 }
-
-// Made with Bob
