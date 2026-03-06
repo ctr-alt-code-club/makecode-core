@@ -290,6 +290,8 @@ namespace pxsim {
         }
 
         export function isLocalHost(): boolean {
+            // CC_TODO Force Local
+            return true
             try {
                 return typeof window !== "undefined" && testLocalhost(window.location.href);
             } catch (e) { return false; }

@@ -147,6 +147,8 @@ namespace pxt.BrowserUtils {
     export let isWinRT = () => typeof (Windows as any) !== "undefined";
 
     export function isLocalHost(ignoreFlags?: boolean): boolean {
+        // CC_TODO Force Local
+        return true
         try {
             return typeof window !== "undefined"
                 && /^https?:\/\/(?:localhost|127\.0\.0\.1|192\.168\.\d{1,3}\.\d{1,3}|[a-zA-Z0-9.-]+\.local):\d+\/?/.test(window.location.href)

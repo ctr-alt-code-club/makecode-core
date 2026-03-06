@@ -419,6 +419,7 @@ namespace pxt {
             typeScriptWorkerJs: "/tsworker.js",
             pxtVersion: "local",
             pxtRelId: "localRelId",
+            // CC_TODO Maybe change this
             pxtCdnUrl: "/cdn/",
             commitCdnUrl: "/cdn/",
             blobCdnUrl: "/blb/",
