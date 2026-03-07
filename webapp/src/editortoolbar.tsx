@@ -66,8 +66,9 @@ export class EditorToolbar extends data.Component<ISettingsProps, EditorToolbarS
     async cloudSaveFile(view?: string) {
         pxt.tickEvent("editortools.cloud", { view: view, collapsed: this.getCollapsedState() }, { interactiveConsent: true });
         const output = await (this.props.parent as ProjectView).exportProjectToFileAsync()
-        const projectName = this.props.parent.state.header.name;
-        handleCloudSaveWithData(projectName, output);
+        const header = this.props.parent.state.header;
+        const projectName = header.name;
+        await handleCloudSaveWithData(projectName, output, header);
         // Optionally also call the regular save
         // this.props.parent.saveAndCompile();
     }

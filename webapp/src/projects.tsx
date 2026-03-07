@@ -821,6 +821,7 @@ export class ProjectsCarousel extends data.Component<ProjectsCarouselProps, Proj
                         cardType="file"
                         name={(ghid && pxt.github.join(ghid.project, ghid.fileName)) || scr.name}
                         time={scr.modificationTime}
+                        ctrlAltCodeCloudSyncTime={scr.ctrlAltCodeCloudSyncTime}
                         url={scr.pubId && scr.pubCurrent ? "/" + scr.pubId : ""}
                         scr={scr} index={index}
                         onCardClick={this.handleCardClick}

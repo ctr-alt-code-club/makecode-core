@@ -64,6 +64,8 @@ export class CodeCardView extends data.Component<CodeCardProps, CodeCardState> {
 
     renderCore() {
         const card = this.props
+        // Check if ctrlAltCode cloud sync is outdated (has local changes not synced)
+        const ctrlAltCodeOutdated = card.ctrlAltCodeCloudSyncTime && card.time && card.ctrlAltCodeCloudSyncTime < card.time;
         let color = card.color || "";
         const renderMd = (md: string) => md.replace(/`/g, '');
         const url = card.url ? /^[^:]+:\/\//.test(card.url) ? card.url : ('/' + card.url.replace(/^\.?\/?/, ''))
@@ -106,11 +108,13 @@ export class CodeCardView extends data.Component<CodeCardProps, CodeCardState> {
 
         const renderButton = (content: JSX.Element) => {
             return (<div className={`ui ${style} ${color} ${card.onClick ? "link" : ''} ${className ? className : ''}`}
+                style={ctrlAltCodeOutdated ? { backgroundColor: '#ffe0e0' } : undefined}
                 role={card.role} aria-selected={card.role === "option" ? "true" : undefined} aria-label={ariaLabel} aria-expanded={ariaExpanded} title={card.title}
                 onClick={clickHandler} tabIndex={card.onClick ? card.tabIndex || 0 : null} onKeyDown={keydownHandler}>{content}</div>)
         }
         const renderLink = (content: JSX.Element) => {
             return (<a href={url} className={`ui ${style} ${color} link ${className ? className : ''}`}
+                style={ctrlAltCodeOutdated ? { backgroundColor: '#ffe0e0' } : undefined}
                 aria-label={ariaLabel} aria-expanded={ariaExpanded} title={card.title}>{content}</a>)
         }
 
@@ -161,6 +165,7 @@ export class CodeCardView extends data.Component<CodeCardProps, CodeCardState> {
                 {cloudStatus && !cloudShowTimestamp &&
                     <span key="date" className="date">{cloudStatus.indicator}</span>
                 }
+                {card.ctrlAltCodeCloudSyncTime && <div key="clouddate" className="date" title={lf("Last synced to Ctrl-Alt-Code cloud")}>{pxt.Util.timeSince(card.ctrlAltCodeCloudSyncTime)}<i className="ui icon cloud right floated"></i></div>}
                 {cloudStatus &&
                     // TODO: alternate icons depending on state
                     <i className="ui large right floated icon cloud"></i>

@@ -174,6 +174,7 @@ declare namespace pxt {
         buttonLabel?: string;
         actionIcon?: string; // icon to override default icon on the action button
         time?: number;
+        ctrlAltCodeCloudSyncTime?: number; // Ctrl-Alt-Code custom cloud last sync time
         url?: string;
         shareUrl?: string;
         learnMoreUrl?: string;

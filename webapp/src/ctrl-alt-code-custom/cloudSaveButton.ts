@@ -29,7 +29,7 @@ export function base64ToUint8Array(base64: string): Uint8Array {
  * Main handler for custom save with project data
  * Receives Uint8Array from exportProjectToFileAsync()
  */
-export async function handleCloudSaveWithData(projectName: string, projectData: Uint8Array): Promise<void> {
+export async function handleCloudSaveWithData(projectName: string, projectData: Uint8Array, header?: pxt.workspace.Header): Promise<void> {
     console.log("🎮 Cloud Save Initiated");
     
     try {
@@ -45,6 +45,13 @@ export async function handleCloudSaveWithData(projectName: string, projectData: 
         
         console.log("✅ Project saved to cloud:", result);
         core.infoNotification(lf("Project '{0}' saved to cloud!", projectName));
+        
+        // Store the cloud sync timestamp in the project header
+        if (header) {
+            header.ctrlAltCodeCloudSyncTime = pxt.Util.nowSeconds();
+            const workspace = await import("../workspace");
+            await workspace.saveAsync(header);
+        }
         
     } catch (error) {
         const errorMsg = error instanceof Error ? error.message : String(error);

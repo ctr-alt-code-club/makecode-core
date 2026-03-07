@@ -26,15 +26,25 @@ export async function syncFromCloud(): Promise<void> {
         const userId = db.getCurrentUserId();
         
         // Fetch all user's projects from cloud
-        const cloudProjects = await db.getUserProjects(userId);
+        const allCloudProjects = await db.getUserProjects(userId);
         
-        if (cloudProjects.length === 0) {
+        if (allCloudProjects.length === 0) {
             console.log("📭 No cloud projects found");
             core.infoNotification(lf("No cloud projects to sync"));
             return;
         }
         
-        console.log(`📦 Found ${cloudProjects.length} cloud projects`);
+        // Filter to get only the latest version of each unique project name
+        // Since projects are ordered by updated_at DESC, the first occurrence is the latest
+        const projectMap = new Map<string, typeof allCloudProjects[0]>();
+        for (const project of allCloudProjects) {
+            if (!projectMap.has(project.project_name)) {
+                projectMap.set(project.project_name, project);
+            }
+        }
+        const cloudProjects = Array.from(projectMap.values());
+        
+        console.log(`📦 Found ${allCloudProjects.length} total revisions, ${cloudProjects.length} unique projects`);
         
         // Import each project
         let importedCount = 0;
@@ -148,6 +158,16 @@ export async function importCloudProject(cloudData: CloudProjectData): Promise<b
         
         // Install the project
         const installedHeader = await workspace.installAsync(installHeader, text);
+        
+        // Store the cloud sync timestamp from the cloud data
+        // Set modificationTime to match the cloud time so the card doesn't appear as having unsaved changes
+        if (cloudData.createdAt) {
+            const syncTime = new Date(cloudData.createdAt).getTime() / 1000; // convert to seconds
+            installedHeader.ctrlAltCodeCloudSyncTime = syncTime;
+            installedHeader.modificationTime = syncTime;
+            // Pass fromCloudSync=true to prevent saveAsync from updating modificationTime to current time
+            await workspace.saveAsync(installedHeader, undefined, true);
+        }
         
         console.log(`✅ Successfully imported project: ${cloudData.projectName}`);
         
