@@ -88,6 +88,7 @@ import { FeedbackModal } from "../../react-common/components/controls/Feedback/F
 import { ThemeManager } from "../../react-common/components/theming/themeManager";
 import { applyPolyfills } from "./polyfills";
 import { sendUpdateFeedbackTheme } from "../../react-common/components/controls/Feedback/FeedbackEventListener";
+import { deleteCloudProjectsByName } from "./ctrl-alt-code-custom/ctrl-alt-code-helper";
 
 pxt.blocks.requirePxtBlockly = () => pxtblockly as any;
 pxt.blocks.requireBlockly = () => Blockly;
@@ -2297,8 +2298,10 @@ export class ProjectView
 
         core.confirmDelete(pkg.mainEditorPkg().header.name, () => {
             let curr = pkg.mainEditorPkg().header
+            const projectName = curr.name
             curr.isDeleted = true
             return workspace.forceSaveAsync(curr, {})
+                .then(() => deleteCloudProjectsByName(projectName))
                 .then(() => this.openHome());
         })
     }

@@ -5,7 +5,7 @@
         "url": "https://arcade.makecode.com/",
         "styles": {
             "primary": "#6B4F76",
-            "menu": "#F76820",
+            "menu": "#ec940c",
             "background": "linear-gradient(90deg, #B1E3DA 0%, #E91E63 100%)"
         }
     },
@@ -15,7 +15,7 @@
         "url": "https://arcade.makecode.com/--skillmap",
         "styles": {
             "primary": "#6B4F76",
-            "menu": "#F76820",
+            "menu": "#ec940c",
             "background": "linear-gradient(90deg, #B1E3DA 0%, #E91E63 100%)"
         }
     },
@@ -50,7 +50,7 @@
         "url": "https://arcade.makecode.com/beta",
         "styles": {
             "primary": "#6B4F76",
-            "menu": "#F76820",
+            "menu": "#ec940c",
             "background": "linear-gradient(90deg, #B1E3DA 0%, #E91E63 100%)"
         }
     },

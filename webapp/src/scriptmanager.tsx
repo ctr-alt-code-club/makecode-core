@@ -4,6 +4,7 @@ import * as sui from "./sui";
 import * as core from "./core";
 import * as workspace from "./workspace";
 import * as compiler from "./compiler";
+import { deleteCloudProjectsByName } from "./ctrl-alt-code-custom/ctrl-alt-code-helper";
 
 import { SearchInput } from "./components/searchInput";
 import { ProjectsCodeCard } from "./projects";
@@ -151,15 +152,18 @@ export class ScriptManagerDialog extends data.Component<ScriptManagerDialogProps
         core.confirmDelete(selectedLength == 1 ? headers.find((h) => Object.keys(selected)[0].includes(h.id)).name
                                                : selectedLength.toString(), () => {
             const promises: Promise<void>[] = [];
+            const deletedProjectNames: string[] = [];
             headers.forEach((header, index) => {
                 if (selected[this.getId(header)]) {
                     // Delete each selected project
                     header.isDeleted = true;
+                    deletedProjectNames.push(header.name);
                     promises.push(workspace.forceSaveAsync(header, {}));
                 }
             })
             this.setState({ selected: {} })
             return Promise.all(promises)
+                .then(() => Promise.all(deletedProjectNames.map(name => deleteCloudProjectsByName(name))))
                 .then(() => {
                     data.clearCache();
                 });

@@ -119,8 +119,10 @@ export async function importCloudProject(cloudData: CloudProjectData): Promise<b
         }
                 
         // Step 4: Check if project already exists locally
+        // Force a sync so we don't use stale header state (e.g. recently deleted projects)
+        await workspace.syncAsync();
         const existingHeaders = workspace.getHeaders(false);
-        const existingProject = existingHeaders.find((h: pxt.workspace.Header) => h.name === cloudData.projectName);
+        const existingProject = existingHeaders.find((h: pxt.workspace.Header) => !h.isDeleted && h.name === cloudData.projectName);
         
         if (existingProject) {
             console.log(`⚠️  Project "${cloudData.projectName}" already exists locally`);
