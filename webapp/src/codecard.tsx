@@ -3,6 +3,8 @@ import * as sui from "./sui";
 import * as data from "./data";
 import * as cloud from "./cloud";
 import { fireClickOnEnter } from "./util";
+import * as workspace from "./workspace";
+import * as core from "./core";
 
 const repeat = pxt.Util.repeatMap;
 
@@ -67,6 +69,51 @@ export class CodeCardView extends data.Component<CodeCardProps, CodeCardState> {
         // Check if ctrlAltCode cloud sync is outdated (has local changes not synced)
         const ctrlAltCodeOutdated = card.ctrlAltCodeCloudSyncTime && card.time && card.ctrlAltCodeCloudSyncTime < card.time;
         let color = card.color || "";
+        
+        // Handler for cloud save button
+        const handleCloudSave = async (e: React.MouseEvent) => {
+            e.stopPropagation(); // Prevent card click
+            e.preventDefault();
+            
+            if (!card.projectId) return;
+            
+            try {
+                const header = this.getData<pxt.workspace.Header>(`header:${card.projectId}`);
+                if (!header) {
+                    core.errorNotification(lf("Project not found"));
+                    return;
+                }
+                
+                // Get the project text/files
+                const text = await workspace.getTextAsync(header.id);
+                
+                // Create project structure for export
+                const project = {
+                    meta: {
+                        cloudId: pxt.CLOUD_ID + pxt.appTarget.id,
+                        targetVersions: pxt.appTarget.versions,
+                        editor: header.editor,
+                        name: header.name
+                    },
+                    source: JSON.stringify(text, null, 2)
+                };
+                
+                // Compress the project
+                const compressed = await pxt.lzmaCompressAsync(JSON.stringify(project, null, 2));
+                
+                // Import the cloud save handler dynamically
+                const cloudSave = await import("./ctrl-alt-code-custom/cloudSaveButton");
+                await cloudSave.handleCloudSaveWithData(header.name, compressed, header);
+                
+                // Invalidate the cached header data to force re-fetch
+                data.invalidate(`header:${card.projectId}`);
+                
+                // Force a refresh of the card component
+                this.forceUpdate();
+            } catch (error) {
+                console.error("Failed to save to cloud:", error);
+            }
+        };
         const renderMd = (md: string) => md.replace(/`/g, '');
         const url = card.url ? /^[^:]+:\/\//.test(card.url) ? card.url : ('/' + card.url.replace(/^\.?\/?/, ''))
             : undefined;
@@ -170,9 +217,34 @@ export class CodeCardView extends data.Component<CodeCardProps, CodeCardState> {
                     // TODO: alternate icons depending on state
                     <i className="ui large right floated icon cloud"></i>
                 }
+                {ctrlAltCodeOutdated && card.projectId && (
+                    <div>
+                        <span key="date" className="date">
+                            <a className="learnmore center floated"
+                                onClick={handleCloudSave}
+                                style={{ cursor: 'pointer' }}
+                                aria-label={lf("Save to Ctrl-Alt-Code Cloud")}
+                                title={lf("Save to Ctrl-Alt-Code Cloud")}>
+                                <i className="ui icon cloud upload"></i>
+                                {lf("Save to Cloud")}
+                            </a>
+                        </span>
+                    </div>
+                )}
             </div> : undefined}
+            {/* {card.extracontent || card.learnMoreUrl || card.buyUrl || card.feedbackUrl || ctrlAltCodeOutdated ? */}
             {card.extracontent || card.learnMoreUrl || card.buyUrl || card.feedbackUrl ?
                 <div className="ui extra content mobile hide">
+                    {/* {ctrlAltCodeOutdated && card.projectId && (
+                        <a className="learnmore left floated"
+                           onClick={handleCloudSave}
+                           style={{ cursor: 'pointer' }}
+                           aria-label={lf("Save to Ctrl-Alt-Code Cloud")}
+                           title={lf("Save to Ctrl-Alt-Code Cloud")}>
+                            <i className="ui icon cloud upload"></i>
+                            {lf("Save to Cloud")}
+                        </a>
+                    )} */}
                     {card.extracontent}
                     {card.buyUrl ?
                         <a className="learnmore left floated" href={card.buyUrl}

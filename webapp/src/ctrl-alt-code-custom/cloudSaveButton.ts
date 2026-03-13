@@ -5,6 +5,7 @@
 
 import * as db from "./db";
 import * as core from "../core";
+import { getCurrentUserId } from "./userInfo";
 
 /**
  * Convert Uint8Array to Base64 string using MakeCode's encoding
@@ -38,7 +39,7 @@ export async function handleCloudSaveWithData(projectName: string, projectData: 
         console.log("🔐 Base64 Size:", base64Data.length, "characters");
         
         // Get current user ID
-        const userId = db.getCurrentUserId();
+        const userId = getCurrentUserId();
         
         // Save to cloud database
         const result = await db.saveProject(userId, projectName, base64Data);
@@ -48,9 +49,29 @@ export async function handleCloudSaveWithData(projectName: string, projectData: 
         
         // Store the cloud sync timestamp in the project header
         if (header) {
-            header.ctrlAltCodeCloudSyncTime = pxt.Util.nowSeconds();
             const workspace = await import("../workspace");
-            await workspace.saveAsync(header);
+            const data = await import("../data");
+            
+            // Get the actual header from workspace to ensure we have the right session
+            const headers = workspace.getHeaders();
+            const actualHeader = headers.find(h => h.id === header.id);
+            
+            if (actualHeader) {
+                // Acquire session for this header to avoid conflicts
+                workspace.acquireHeaderSession(actualHeader);
+                
+                // Update both cloud sync time and modification time to now
+                // This ensures the card doesn't show as "outdated" after saving
+                const now = pxt.Util.nowSeconds();
+                actualHeader.ctrlAltCodeCloudSyncTime = now;
+                actualHeader.modificationTime = now;
+                
+                // Save with fromCloudSync=true to prevent automatic modificationTime update
+                await workspace.saveAsync(actualHeader, undefined, true);
+                
+                // Invalidate the data cache to force UI refresh
+                data.invalidate(`header:${actualHeader.id}`);
+            }
         }
         
     } catch (error) {

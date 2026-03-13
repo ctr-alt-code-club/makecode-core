@@ -5,6 +5,28 @@
 
 /// <reference types="node" />
 
+// Import user authentication functions from userInfo module
+import {
+    getCurrentUserId,
+    initializeUserId,
+    getCurrentUsername,
+    getCurrentUserEmail,
+    getCurrentUserGroups,
+    getCurrentUserInfo,
+    UserInfo
+} from './userInfo';
+
+// Re-export for backward compatibility with existing code
+export {
+    getCurrentUserId,
+    initializeUserId,
+    getCurrentUsername,
+    getCurrentUserEmail,
+    getCurrentUserGroups,
+    getCurrentUserInfo,
+    UserInfo
+};
+
 /**
  * Configuration for the API endpoint
  * Update this to match your deployed API URL
@@ -239,27 +261,6 @@ export async function checkApiHealth(): Promise<{ status: string; timestamp: str
         console.error('❌ API health check failed:', error);
         throw error;
     }
-}
-
-/**
- * Get the current user ID
- * TODO: Implement proper user authentication
- * For now, returns a placeholder or stored user ID
- */
-export function getCurrentUserId(): string {
-    // TODO: Replace with actual authentication system
-    // This could come from:
-    // - OAuth token
-    // - Session storage
-    // - Local storage
-    // - Cookie
-    
-    const storedUserId = localStorage.getItem('ctrlaltcode_user_id');
-    if (storedUserId) {
-        return storedUserId;
-    }
-        
-    return 'test-user'; // Use this for testing
 }
 
 /**

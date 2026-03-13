@@ -89,6 +89,7 @@ import { ThemeManager } from "../../react-common/components/theming/themeManager
 import { applyPolyfills } from "./polyfills";
 import { sendUpdateFeedbackTheme } from "../../react-common/components/controls/Feedback/FeedbackEventListener";
 import { deleteCloudProjectsByName } from "./ctrl-alt-code-custom/ctrl-alt-code-helper";
+import { initializeUserId } from "./ctrl-alt-code-custom/userInfo";
 
 pxt.blocks.requirePxtBlockly = () => pxtblockly as any;
 pxt.blocks.requireBlockly = () => Blockly;
@@ -1125,6 +1126,12 @@ export class ProjectView
 
     public async componentDidMount() {
         this.allEditors.forEach(e => e.prepare())
+        
+        // Initialize user ID from Authentik headers
+        initializeUserId().catch((err: any) => {
+            console.error('Failed to initialize user ID from Authentik:', err);
+        });
+        
         await simulator.initAsync(getBoardView(), {
             orphanException: brk => {
                 // TODO: start debugging session

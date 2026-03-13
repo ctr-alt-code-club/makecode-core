@@ -1,4 +1,5 @@
 import * as db from "./db";
+import { getCurrentUserId } from "./userInfo";
 
 /**
  * Delete cloud projects for the current user that match a local project name.
@@ -7,7 +8,7 @@ import * as db from "./db";
 export async function deleteCloudProjectsByName(projectName: string): Promise<void> {
     console.log("🎮 Cloud Deleteion Initiated - " + projectName);
     try {
-        const userId = db.getCurrentUserId();
+        const userId = getCurrentUserId();
         const projects = await db.getUserProjects(userId);
         const matchingProjects = projects.filter(project => project.project_name === projectName);
 

@@ -998,6 +998,14 @@ export function serveAsync(options: ServeOptions) {
         req.url = req.url.replace(/^\/app\/[0-9a-f]{40}(?:-[0-9a-f]{10})?(.*)$/i, "$1");
 
         let uri = url.parse(req.url);
+
+        // CC_TODO
+        // console.log('=== Incoming Request ===');
+        // console.log('URL:', req.url);
+        // console.log('Method:', req.method);
+        // console.log('Headers:', JSON.stringify(req.headers, null, 2));
+        // console.log('========================');
+        
         let pathname = decodeURI(uri.pathname);
         const opts: pxt.Map<string | string[]> = querystring.parse(url.parse(req.url).query);
         const htmlParams: pxt.Map<string> = {};
@@ -1114,6 +1122,40 @@ export function serveAsync(options: ServeOptions) {
 
             if (elts[1] == "store") {
                 return await handleApiStoreRequestAsync(req, res, elts.slice(2));
+            }
+
+            if (elts[1] == "debug-headers") {
+                // Access from https://arcade.ctrl-alt-code.uk/api/debug-headers
+                res.writeHead(200, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({
+                    allHeaders: req.headers,
+                    authentikHeaders: {
+                        username: req.headers['x-authentik-username'],
+                        email: req.headers['x-authentik-email'],
+                        uid: req.headers['x-authentik-uid'],
+                        groups: req.headers['x-authentik-groups'],
+                        forwardedUser: req.headers['x-forwarded-user'],
+                        forwardedEmail: req.headers['x-forwarded-email']
+                    }
+                }, null, 2));
+                return;
+            }
+
+            if (elts[1] == "user-info") {
+                // Return user info from Authentik headers
+                const userInfo = {
+                    userId: req.headers['x-authentik-uid'] as string || null,
+                    username: req.headers['x-authentik-username'] as string || null,
+                    email: req.headers['x-authentik-email'] as string || null,
+                    groups: req.headers['x-authentik-groups'] as string || null
+                };
+                
+                res.writeHead(200, {
+                    'Content-Type': 'application/json',
+                    'Cache-Control': 'no-cache, no-store, must-revalidate'
+                });
+                res.end(JSON.stringify(userInfo));
+                return;
             }
 
             if (/^\d\d\d[\d\-]*$/.test(elts[1]) && elts[2] == "js") {

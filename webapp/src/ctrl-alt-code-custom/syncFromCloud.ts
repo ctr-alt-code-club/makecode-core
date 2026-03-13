@@ -3,6 +3,7 @@ import * as workspace from "../workspace";
 import * as core from "../core";
 import * as db from "./db";
 import { base64ToUint8Array } from "./cloudSaveButton";
+import { getCurrentUserId } from "./userInfo";
 
 /**
  * Interface for cloud project data
@@ -23,7 +24,7 @@ export async function syncFromCloud(): Promise<void> {
     
     try {
         // Get current user ID
-        const userId = db.getCurrentUserId();
+        const userId = getCurrentUserId();
         
         // Fetch all user's projects from cloud
         const allCloudProjects = await db.getUserProjects(userId);
