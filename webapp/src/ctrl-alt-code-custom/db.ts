@@ -5,28 +5,6 @@
 
 /// <reference types="node" />
 
-// Import user authentication functions from userInfo module
-import {
-    getCurrentUserId,
-    initializeUserId,
-    getCurrentUsername,
-    getCurrentUserEmail,
-    getCurrentUserGroups,
-    getCurrentUserInfo,
-    UserInfo
-} from './userInfo';
-
-// Re-export for backward compatibility with existing code
-export {
-    getCurrentUserId,
-    initializeUserId,
-    getCurrentUsername,
-    getCurrentUserEmail,
-    getCurrentUserGroups,
-    getCurrentUserInfo,
-    UserInfo
-};
-
 /**
  * Configuration for the API endpoint
  * Update this to match your deployed API URL

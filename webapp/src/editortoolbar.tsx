@@ -193,7 +193,7 @@ export class EditorToolbar extends data.Component<ISettingsProps, EditorToolbarS
                 role="button"
                 icon='cloud upload'
                 text={view != View.Mobile ? "Save to Cloud" : undefined}
-                className={`primary custom-save-button ${saveButtonClasses}`}
+                className={`primary download-button custom-save-button ${saveButtonClasses}`}
                 title={lf("Cloud Save")}
                 ariaLabel={lf("Cloud Save")}
                 onButtonClick={this.cloudSaveFile}

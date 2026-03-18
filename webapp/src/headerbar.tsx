@@ -16,6 +16,8 @@ import ISettingsProps = pxt.editor.ISettingsProps;
 import { ThemeManager } from "../../react-common/components/theming/themeManager";
 import { Button } from "../../react-common/components/controls/Button";
 
+import { getCurrentUsername } from "./ctrl-alt-code-custom/userInfo";
+
 type HeaderBarView = "home" | "editor" | "tutorial" | "tutorial-tab" | "debugging" | "sandbox" | "time-machine";
 const LONGPRESS_DURATION = 750;
 
@@ -297,6 +299,16 @@ export class HeaderBar extends data.Component<ISettingsProps, {}> {
                 {isNativeHost && <sui.Item className="icon nativeback" role="menuitem" icon="chevron left large" ariaLabel={lf("Back to application")}
                     onClick={cmds.nativeHostBackAsync} onMouseDown={this.backButtonTouchStart} onMouseUp={this.backButtonTouchEnd} onMouseLeave={this.backButtonTouchEnd} />}
                 {this.getOrganizationLogo(targetTheme, highContrast, view)}
+                <div className="ui item username-display" style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    padding: '0 1em',
+                    fontWeight: 500,
+                    fontSize: '1.1em'
+                }}>
+                    <i className="user icon" style={{ marginRight: '0.5em' }}></i>
+                    <span>{getCurrentUsername()}</span>
+                </div>
                 {view === "tutorial"
                     // TODO: temporary place for tutorial name, we will eventually redesign the header for tutorial view
                     ? <sui.Item className="tutorialname" tabIndex={-1} textClass="landscape only" text={tutorialOptions.tutorialName}/>

@@ -188,7 +188,7 @@ pre {
 #simulator {
     height: 100%;
 }
-#simulator .editor-sidebar, #downloadArea {
+#simulator .editor-sidebar, #downloadArea, #saveArea {
     min-width: @simulatorWidth;
     max-width: @simulatorWidth;
     left: 0;
@@ -246,7 +246,7 @@ pre {
     outline: @editorFocusBorderSize solid var(--pxt-focus-border);
 }
 
-#downloadArea {
+#downloadArea, #saveArea {
     margin: unset;
 
     > div {
@@ -262,6 +262,7 @@ pre {
 }
 
 #downloadArea .button:focus-visible,
+#saveArea .button:focus-visible,
 #editortools .button:focus-visible
 {
     outline: @editorFocusBorderSize solid var(--pxt-focus-border);
@@ -277,7 +278,8 @@ pre {
     text-align: center;
 }
 
-.transparentEditorTools #downloadArea {
+.transparentEditorTools #downloadArea,
+.transparentEditorTools #saveArea {
     background-color: transparent !important;
 }
 
@@ -1840,7 +1842,8 @@ p.ui.font.small {
     float: left;
 }
 
-#downloadArea button .icon.xicon {
+#downloadArea button .icon.xicon,
+#saveArea button .icon.xicon {
     font-family: "xicon";
 }
 
@@ -2038,7 +2041,7 @@ p.ui.font.small {
         left: -2rem;
     }
 
-    #downloadArea {
+    #downloadArea, #saveArea {
         // .25rem from padding around editortoolbar in portrait mode
         width: ~"calc(@{blocklyRowWidthTablet} - .25rem)";
         margin-right: 0 !important;
@@ -2095,7 +2098,8 @@ p.ui.font.small {
         }
     }
 
-    .collapsedEditorTools #downloadArea {
+    .collapsedEditorTools #downloadArea,
+    .collapsedEditorTools #saveArea {
         background: var(--pxt-target-background3);
         color: var(--pxt-target-foreground3);
     }
@@ -2129,7 +2133,7 @@ p.ui.font.small {
 /* <= Small Monitor (Mobile + Tablet + Small Monitor) */
 @media only screen and (max-width: @largestSmallMonitor) {
     /* Layout */
-    #simulator .editor-sidebar, #downloadArea {
+    #simulator .editor-sidebar, #downloadArea, #saveArea {
         min-width:@simulatorWidthSmall;
         max-width:@simulatorWidthSmall;
     }
@@ -2192,7 +2196,7 @@ p.ui.font.small {
             padding: 0 !important;
         }
 
-        #downloadArea {
+        #downloadArea, #saveArea {
             background-color: inherit;
             min-width: unset;
             max-width: unset;

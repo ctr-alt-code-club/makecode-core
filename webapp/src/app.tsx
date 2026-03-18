@@ -90,6 +90,7 @@ import { applyPolyfills } from "./polyfills";
 import { sendUpdateFeedbackTheme } from "../../react-common/components/controls/Feedback/FeedbackEventListener";
 import { deleteCloudProjectsByName } from "./ctrl-alt-code-custom/ctrl-alt-code-helper";
 import { initializeUserId } from "./ctrl-alt-code-custom/userInfo";
+import { syncFromCloud } from "./ctrl-alt-code-custom/syncFromCloud";
 
 pxt.blocks.requirePxtBlockly = () => pxtblockly as any;
 pxt.blocks.requireBlockly = () => Blockly;
@@ -1128,9 +1129,19 @@ export class ProjectView
         this.allEditors.forEach(e => e.prepare())
         
         // Initialize user ID from Authentik headers
-        initializeUserId().catch((err: any) => {
-            console.error('Failed to initialize user ID from Authentik:', err);
-        });
+        initializeUserId()
+            .then(() => {
+                console.log('✅ User initialized successfully, triggering cloud sync...');
+                // Trigger cloud sync after successful user initialization
+                syncFromCloud().catch((err: any) => {
+                    console.error('Failed to sync from cloud:', err);
+                });
+                // Force re-render to update header bar with username
+                this.forceUpdate();
+            })
+            .catch((err: any) => {
+                console.error('Failed to initialize user ID from Authentik:', err);
+            });
         
         await simulator.initAsync(getBoardView(), {
             orphanException: brk => {
