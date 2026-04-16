@@ -192,6 +192,11 @@ export class CodeCardView extends data.Component<CodeCardProps, CodeCardState> {
             ? (header.modificationTime && (!header.ctrlAltCodeCloudSyncTime || header.ctrlAltCodeCloudSyncTime < header.modificationTime))
             : (card.time && (!card.ctrlAltCodeCloudSyncTime || card.ctrlAltCodeCloudSyncTime < card.time));
 
+        // Check for duplicate project names
+        const allHeaders = card.projectId ? this.getData<pxt.workspace.Header[]>('header:*') : null;
+        const hasDuplicateName = header && allHeaders ?
+            allHeaders.filter(h => h && h.name === header.name && h.id !== header.id).length > 0 : false;
+
         const ariaLabel = card.ariaLabel || card.title || card.shortName || name;
         const ariaExpanded = !card.directOpen && card.selected !== undefined ? card.selected : undefined;
 
@@ -262,62 +267,134 @@ export class CodeCardView extends data.Component<CodeCardProps, CodeCardState> {
                     <i className="ui large right floated icon cloud"></i>
                 }
             </div> : undefined}
-            {card.extracontent || card.learnMoreUrl || card.buyUrl || card.feedbackUrl || ctrlAltCodeOutdated ?
+            {card.extracontent || card.learnMoreUrl || card.buyUrl || card.feedbackUrl || ctrlAltCodeOutdated || hasDuplicateName ?
                 <div className="ui extra content mobile hide">
-                    {ctrlAltCodeOutdated && card.projectId && (
+                    {hasDuplicateName && card.projectId && (
                         <div style={{
-                            display: 'block',
-                            width: '100%',
-                            padding: '0.65rem',
-                            background: 'linear-gradient(135deg, rgba(255, 193, 7, 0.08) 0%, rgba(255, 152, 0, 0.08) 100%)',
-                            borderRadius: '4px',
-                            border: '1px solid rgba(255, 193, 7, 0.25)',
-                            margin: '0',
-                            boxSizing: 'border-box'
+                            display: 'flex',
+                            flexDirection: 'column',
+                            width: 'calc(100% + 2.5em)',
+                            marginLeft: '-1.25em',
+                            marginRight: '-1.25em',
+                            marginTop: '0',
+                            marginBottom: hasDuplicateName && ctrlAltCodeOutdated ? '0.5rem' : '-1.25em',
+                            padding: '0.85rem 1.25em',
+                            background: 'linear-gradient(135deg, rgba(220, 53, 69, 0.12) 0%, rgba(200, 35, 51, 0.12) 100%)',
+                            borderRadius: ctrlAltCodeOutdated ? '0' : '0 0 6px 6px',
+                            border: '1.5px solid rgba(220, 53, 69, 0.35)',
+                            borderTop: 'none',
+                            borderBottom: ctrlAltCodeOutdated ? 'none' : '1.5px solid rgba(220, 53, 69, 0.35)',
+                            boxSizing: 'border-box',
+                            gap: '0.5rem'
                         }}>
                             <div style={{
-                                fontSize: '0.8em',
-                                fontWeight: '600',
-                                color: 'var(--pxt-warning-foreground, #f57c00)',
-                                marginBottom: '0.6rem',
                                 display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'space-between',
-                                gap: '0.4rem'
+                                flexDirection: 'row',
+                                alignItems: 'flex-start',
+                                gap: '0.6rem',
+                                width: '100%'
                             }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                                    <i className="ui icon exclamation triangle" style={{ margin: 0, fontSize: '0.9em' }}></i>
-                                    {lf("Local changes not saved")}
+                                <i className="ui icon exclamation circle" style={{
+                                    margin: 0,
+                                    fontSize: '1.3em',
+                                    color: '#dc3545',
+                                    flexShrink: 0,
+                                    marginTop: '0.1em'
+                                }}></i>
+                                <div style={{
+                                    fontSize: '0.9em',
+                                    fontWeight: '600',
+                                    color: '#dc3545',
+                                    lineHeight: '1.4',
+                                    flex: 1
+                                }}>
+                                    {lf("Duplicate project name detected. Cloud saves must have unique names. Please save the correct version to the cloud and remove the other project.")}
                                 </div>
-                                {header && header.ctrlAltCodeCloudSyncTime && header.modificationTime && (
-                                    <div style={{
-                                        fontSize: '0.85em',
-                                        fontWeight: '500',
-                                        color: 'var(--pxt-neutral-foreground2, #666)',
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        gap: '0.3rem'
-                                    }}>
-                                        <i className="ui icon clock outline" style={{ margin: 0, fontSize: '0.9em' }}></i>
-                                        {this.getOutOfDateText(header.ctrlAltCodeCloudSyncTime, header.modificationTime)}
-                                    </div>
-                                )}
                             </div>
-                            <a className="ui button primary fluid compact"
+                        </div>
+                    )}
+                    {ctrlAltCodeOutdated && card.projectId && (
+                        <div style={{
+                            display: 'flex',
+                            flexDirection: 'column',
+                            width: 'calc(100% + 2.5em)',
+                            marginLeft: '-1.25em',
+                            marginRight: '-1.25em',
+                            marginTop: '0',
+                            marginBottom: '-1.25em',
+                            padding: '0.85rem 1.25em',
+                            background: 'linear-gradient(135deg, rgba(255, 193, 7, 0.12) 0%, rgba(255, 152, 0, 0.12) 100%)',
+                            borderRadius: '0 0 6px 6px',
+                            border: '1.5px solid rgba(255, 193, 7, 0.35)',
+                            borderTop: 'none',
+                            boxSizing: 'border-box',
+                            gap: '0.7rem'
+                        }}>
+                            <div style={{
+                                display: 'flex',
+                                flexDirection: 'row',
+                                alignItems: 'flex-start',
+                                gap: '0.6rem',
+                                width: '100%'
+                            }}>
+                                <i className="ui icon exclamation triangle" style={{
+                                    margin: 0,
+                                    fontSize: '1.3em',
+                                    color: '#f57c00',
+                                    flexShrink: 0,
+                                    marginTop: '0.1em'
+                                }}></i>
+                                <div style={{
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    gap: '0.4rem',
+                                    flex: 1
+                                }}>
+                                    <div style={{
+                                        fontSize: '0.95em',
+                                        fontWeight: '600',
+                                        color: '#f57c00',
+                                        lineHeight: '1.3'
+                                    }}>
+                                        {lf("Local changes not saved")}
+                                    </div>
+                                    {header && header.ctrlAltCodeCloudSyncTime && header.modificationTime && (
+                                        <div style={{
+                                            fontSize: '0.85em',
+                                            fontWeight: '500',
+                                            color: '#666',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            gap: '0.4rem',
+                                            lineHeight: '1.3',
+                                            paddingLeft: '0.15rem'
+                                        }}>
+                                            <i className="ui icon clock outline" style={{ margin: 0, fontSize: '1em' }}></i>
+                                            <span>{this.getOutOfDateText(header.ctrlAltCodeCloudSyncTime, header.modificationTime)}</span>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                            <a className="ui button primary fluid"
                                onClick={handleCloudSave}
                                style={{
                                    cursor: 'pointer',
                                    fontWeight: '600',
-                                   fontSize: '0.9em',
-                                   padding: '0.65em 1em',
-                                   boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+                                   fontSize: '0.95em',
+                                   padding: '0.7em 1.2em',
+                                   boxShadow: '0 2px 4px rgba(0,0,0,0.12)',
                                    width: '100%',
-                                   display: 'block'
+                                   display: 'flex',
+                                   alignItems: 'center',
+                                   justifyContent: 'center',
+                                   gap: '0.5rem',
+                                   margin: 0,
+                                   lineHeight: '1.3'
                                }}
                                aria-label={lf("Save local changes to the cloud")}
                                title={lf("Save local changes to the cloud")}>
-                                <i className="ui icon cloud upload"></i>
-                                {lf("Save to Cloud")}
+                                <i className="ui icon cloud upload" style={{ margin: 0 }}></i>
+                                <span>{lf("Save to Cloud")}</span>
                             </a>
                         </div>
                     )}
