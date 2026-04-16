@@ -21,12 +21,69 @@ export interface UserInfo {
 let cachedUserInfo: UserInfo | null = null;
 
 /**
- * Initialize user information by fetching from server (which reads Authentik headers)
- * Should be called once when the app loads
+ * Authentik authentication flow URL
  */
-export async function initializeUserId(): Promise<void> {
+const AUTHENTIK_FLOW_URL = 'https://authentik.ctrl-alt-code.uk/if/flow/ctrl-alt-code-authentication-flow/';
+
+/**
+ * Check if running on localhost
+ */
+export function isLocalhost(): boolean {
+    return window.location.hostname === 'localhost' ||
+           window.location.hostname === '127.0.0.1' ||
+           window.location.hostname === '';
+}
+
+/**
+ * Check if user is authenticated (has valid user info)
+ */
+export function isAuthenticated(): boolean {
+    if (isLocalhost()) {
+        return true; // Always authenticated on localhost
+    }
+    return cachedUserInfo !== null || localStorage.getItem('ctrlaltcode_user_info') !== null;
+}
+
+/**
+ * Redirect to Authentik login flow
+ */
+export function redirectToLogin(): void {
+    // Store the current URL to return to after login
+    const returnUrl = window.location.href;
+    sessionStorage.setItem('ctrlaltcode_return_url', returnUrl);
+    
+    // Redirect to Authentik
+    window.location.href = AUTHENTIK_FLOW_URL;
+}
+
+/**
+ * Clear cached user information
+ * Should be called when user logs out or when you want to force a refresh
+ */
+export function clearUserInfo(): void {
+    cachedUserInfo = null;
+    localStorage.removeItem('ctrlaltcode_user_info');
+    console.log('🧹 User info cache cleared');
+}
+
+/**
+ * Initialize user information by fetching from server (which reads Authentik headers)
+ * Should be called once when the app loads, or when user logs in
+ * @param forceRefresh - If true, clears cache before fetching
+ */
+export async function initializeUserId(forceRefresh: boolean = false): Promise<void> {
+    if (forceRefresh) {
+        clearUserInfo();
+    }
+    
     try {
-        const response = await fetch('/api/user-info');
+        const response = await fetch('/api/user-info', {
+            // Add cache-busting to ensure fresh data
+            headers: {
+                'Cache-Control': 'no-cache',
+                'Pragma': 'no-cache'
+            }
+        });
         if (response.ok) {
             const userInfo: UserInfo = await response.json();
             if (userInfo.userId) {
@@ -47,9 +104,14 @@ export async function initializeUserId(): Promise<void> {
 
 /**
  * Get the current user ID
- * Returns the Authentik UID if authenticated, otherwise falls back to test-user
+ * Returns the Authentik UID if authenticated, otherwise falls back to test-user on localhost
  */
 export function getCurrentUserId(): string {
+    // On localhost, always use test-user
+    if (isLocalhost()) {
+        return 'test-user';
+    }
+    
     // Try cached value first (from initializeUserId)
     if (cachedUserInfo) {
         return cachedUserInfo.userId;
@@ -66,16 +128,21 @@ export function getCurrentUserId(): string {
         }
     }
     
-    // Fallback for development/testing (when not behind Authentik)
-    console.warn('⚠️ No authenticated user, using test-user fallback');
-    return 'test-user';
+    // Not authenticated and not on localhost - user needs to log in
+    console.warn('⚠️ No authenticated user - login required');
+    return '';
 }
 
 /**
  * Get the current username
- * Returns the Authentik username if authenticated, otherwise falls back to 'Test User'
+ * Returns the Authentik username if authenticated, otherwise falls back to 'Test User' on localhost
  */
 export function getCurrentUsername(): string {
+    // On localhost, always use Test User
+    if (isLocalhost()) {
+        return 'Test User';
+    }
+    
     // Try cached value first
     if (cachedUserInfo) {
         return cachedUserInfo.username;
@@ -92,8 +159,8 @@ export function getCurrentUsername(): string {
         }
     }
     
-    // Fallback
-    return 'Test User';
+    // Not authenticated - return empty string
+    return '';
 }
 
 /**

@@ -8,7 +8,9 @@ import * as core from "./core";
 
 const repeat = pxt.Util.repeatMap;
 
-export interface CodeCardState { }
+export interface CodeCardState {
+    currentTime?: number;
+}
 
 interface CodeCardProps extends pxt.CodeCard {
     tallCard?: boolean;
@@ -17,11 +19,14 @@ interface CodeCardProps extends pxt.CodeCard {
 export class CodeCardView extends data.Component<CodeCardProps, CodeCardState> {
 
     public element: HTMLDivElement;
+    private timeUpdateInterval: any;
 
     constructor(props: pxt.CodeCard) {
         super(props);
 
-        this.state = {};
+        this.state = {
+            currentTime: Date.now()
+        };
     }
 
     private static observer: IntersectionObserver;
@@ -62,12 +67,44 @@ export class CodeCardView extends data.Component<CodeCardProps, CodeCardState> {
             CodeCardView.setupIntersectionObserver();
             CodeCardView.observer.observe(lazyImage);
         }
+
+        // Update the time every minute to refresh the "last updated" display
+        this.timeUpdateInterval = setInterval(() => {
+            this.setState({ currentTime: Date.now() });
+        }, 60000); // Update every minute
+    }
+
+    componentWillUnmount() {
+        if (this.timeUpdateInterval) {
+            clearInterval(this.timeUpdateInterval);
+        }
+    }
+
+    getOutOfDateText = (cloudSyncTime: number, modificationTime: number): string => {
+        if (!cloudSyncTime) return lf("Never synced");
+        if (!modificationTime) return lf("Up to date");
+        
+        // Calculate how out of date the cloud version is
+        const diffSeconds = modificationTime - cloudSyncTime;
+        
+        if (diffSeconds <= 0) {
+            return lf("Up to date");
+        } else if (diffSeconds < 60) {
+            return lf("Out of date by < 1 min");
+        } else if (diffSeconds < 3600) {
+            const minutes = Math.floor(diffSeconds / 60);
+            return lf("Out of date by {0} min", minutes);
+        } else if (diffSeconds < 86400) {
+            const hours = Math.floor(diffSeconds / 3600);
+            return lf("Out of date by {0} hr", hours);
+        } else {
+            const days = Math.floor(diffSeconds / 86400);
+            return lf("Out of date by {0} day", days);
+        }
     }
 
     renderCore() {
         const card = this.props
-        // Check if ctrlAltCode cloud sync is outdated (has local changes not synced)
-        const ctrlAltCodeOutdated = card.ctrlAltCodeCloudSyncTime && card.time && card.ctrlAltCodeCloudSyncTime < card.time;
         let color = card.color || "";
         
         // Handler for cloud save button
@@ -147,6 +184,13 @@ export class CodeCardView extends data.Component<CodeCardProps, CodeCardState> {
         const cloudStatus = cloudMd?.cloudStatus();
         const lastCloudSave = cloudStatus ? Math.min(header.cloudLastSyncTime, header.modificationTime) : card.time;
         const cloudShowTimestamp = cloudStatus && (cloudStatus.value === "synced" || cloudStatus.value === "justSynced" || cloudStatus.value === "localEdits");
+        
+        // Check if ctrlAltCode cloud sync is outdated (has local changes not synced)
+        // Use header data if available (dynamically updated), otherwise fall back to card props
+        // Show as outdated if: never synced (no ctrlAltCodeCloudSyncTime) OR synced but modified since
+        const ctrlAltCodeOutdated = header
+            ? (header.modificationTime && (!header.ctrlAltCodeCloudSyncTime || header.ctrlAltCodeCloudSyncTime < header.modificationTime))
+            : (card.time && (!card.ctrlAltCodeCloudSyncTime || card.ctrlAltCodeCloudSyncTime < card.time));
 
         const ariaLabel = card.ariaLabel || card.title || card.shortName || name;
         const ariaExpanded = !card.directOpen && card.selected !== undefined ? card.selected : undefined;
@@ -217,34 +261,66 @@ export class CodeCardView extends data.Component<CodeCardProps, CodeCardState> {
                     // TODO: alternate icons depending on state
                     <i className="ui large right floated icon cloud"></i>
                 }
-                {ctrlAltCodeOutdated && card.projectId && (
-                    <div>
-                        <span key="date" className="date">
-                            <a className="learnmore center floated"
-                                onClick={handleCloudSave}
-                                style={{ cursor: 'pointer' }}
-                                aria-label={lf("Save to Ctrl-Alt-Code Cloud")}
-                                title={lf("Save to Ctrl-Alt-Code Cloud")}>
+            </div> : undefined}
+            {card.extracontent || card.learnMoreUrl || card.buyUrl || card.feedbackUrl || ctrlAltCodeOutdated ?
+                <div className="ui extra content mobile hide">
+                    {ctrlAltCodeOutdated && card.projectId && (
+                        <div style={{
+                            display: 'block',
+                            width: '100%',
+                            padding: '0.65rem',
+                            background: 'linear-gradient(135deg, rgba(255, 193, 7, 0.08) 0%, rgba(255, 152, 0, 0.08) 100%)',
+                            borderRadius: '4px',
+                            border: '1px solid rgba(255, 193, 7, 0.25)',
+                            margin: '0',
+                            boxSizing: 'border-box'
+                        }}>
+                            <div style={{
+                                fontSize: '0.8em',
+                                fontWeight: '600',
+                                color: 'var(--pxt-warning-foreground, #f57c00)',
+                                marginBottom: '0.6rem',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'space-between',
+                                gap: '0.4rem'
+                            }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                                    <i className="ui icon exclamation triangle" style={{ margin: 0, fontSize: '0.9em' }}></i>
+                                    {lf("Local changes not saved")}
+                                </div>
+                                {header && header.ctrlAltCodeCloudSyncTime && header.modificationTime && (
+                                    <div style={{
+                                        fontSize: '0.85em',
+                                        fontWeight: '500',
+                                        color: 'var(--pxt-neutral-foreground2, #666)',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '0.3rem'
+                                    }}>
+                                        <i className="ui icon clock outline" style={{ margin: 0, fontSize: '0.9em' }}></i>
+                                        {this.getOutOfDateText(header.ctrlAltCodeCloudSyncTime, header.modificationTime)}
+                                    </div>
+                                )}
+                            </div>
+                            <a className="ui button primary fluid compact"
+                               onClick={handleCloudSave}
+                               style={{
+                                   cursor: 'pointer',
+                                   fontWeight: '600',
+                                   fontSize: '0.9em',
+                                   padding: '0.65em 1em',
+                                   boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+                                   width: '100%',
+                                   display: 'block'
+                               }}
+                               aria-label={lf("Save local changes to the cloud")}
+                               title={lf("Save local changes to the cloud")}>
                                 <i className="ui icon cloud upload"></i>
                                 {lf("Save to Cloud")}
                             </a>
-                        </span>
-                    </div>
-                )}
-            </div> : undefined}
-            {/* {card.extracontent || card.learnMoreUrl || card.buyUrl || card.feedbackUrl || ctrlAltCodeOutdated ? */}
-            {card.extracontent || card.learnMoreUrl || card.buyUrl || card.feedbackUrl ?
-                <div className="ui extra content mobile hide">
-                    {/* {ctrlAltCodeOutdated && card.projectId && (
-                        <a className="learnmore left floated"
-                           onClick={handleCloudSave}
-                           style={{ cursor: 'pointer' }}
-                           aria-label={lf("Save to Ctrl-Alt-Code Cloud")}
-                           title={lf("Save to Ctrl-Alt-Code Cloud")}>
-                            <i className="ui icon cloud upload"></i>
-                            {lf("Save to Cloud")}
-                        </a>
-                    )} */}
+                        </div>
+                    )}
                     {card.extracontent}
                     {card.buyUrl ?
                         <a className="learnmore left floated" href={card.buyUrl}

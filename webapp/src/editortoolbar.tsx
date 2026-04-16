@@ -22,11 +22,13 @@ const enum View {
 
 interface EditorToolbarState {
     compileState: "compiling" | "success" | null;
+    currentTime?: number;
 }
 
 export class EditorToolbar extends data.Component<ISettingsProps, EditorToolbarState> {
     protected compileTimeout: number;
     private compileBtnDropdown: React.RefObject<sui.DropdownMenu>;
+    private timeUpdateInterval: any;
 
     constructor(props: ISettingsProps) {
         super(props);
@@ -45,6 +47,93 @@ export class EditorToolbar extends data.Component<ISettingsProps, EditorToolbarS
         this.cloudButtonClick = this.cloudButtonClick.bind(this);
 
         this.compileBtnDropdown = React.createRef();
+        
+        this.state = {
+            compileState: null,
+            currentTime: Date.now()
+        };
+    }
+
+    componentDidMount() {
+        // Update the time every minute to refresh the "last updated" display
+        this.timeUpdateInterval = setInterval(() => {
+            this.setState({ currentTime: Date.now() });
+        }, 60000); // Update every minute
+    }
+
+    getOutOfDateText = (cloudSyncTime: number, modificationTime: number): string => {
+        if (!cloudSyncTime) return lf("Never synced");
+        if (!modificationTime) return lf("Up to date");
+        
+        // Calculate how out of date the cloud version is
+        const diffSeconds = modificationTime - cloudSyncTime;
+        
+        if (diffSeconds <= 0) {
+            return lf("Up to date");
+        } else if (diffSeconds < 60) {
+            return lf("Out of date by < 1 min");
+        } else if (diffSeconds < 3600) {
+            const minutes = Math.floor(diffSeconds / 60);
+            return lf("Out of date by {0} min", minutes);
+        } else if (diffSeconds < 86400) {
+            const hours = Math.floor(diffSeconds / 3600);
+            return lf("Out of date by {0} hr", hours);
+        } else {
+            const days = Math.floor(diffSeconds / 86400);
+            return lf("Out of date by {0} day", days);
+        }
+    }
+
+    getSyncStatusStyle = (cloudSyncTime: number, modificationTime: number) => {
+        if (!cloudSyncTime) {
+            return {
+                background: 'linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%)',
+                borderColor: '#ffc107',
+                iconColor: '#ff9800',
+                textColor: '#856404',
+                icon: 'exclamation triangle'
+            };
+        }
+        
+        const diffSeconds = modificationTime - cloudSyncTime;
+        
+        if (diffSeconds <= 0) {
+            // Up to date - green
+            return {
+                background: 'linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%)',
+                borderColor: '#28a745',
+                iconColor: '#28a745',
+                textColor: '#155724',
+                icon: 'check circle'
+            };
+        } else if (diffSeconds < 300) {
+            // Less than 5 minutes - light yellow
+            return {
+                background: 'linear-gradient(135deg, #fff9e6 0%, #fff3cd 100%)',
+                borderColor: '#ffc107',
+                iconColor: '#ffa000',
+                textColor: '#856404',
+                icon: 'clock outline'
+            };
+        } else if (diffSeconds < 3600) {
+            // Less than 1 hour - orange
+            return {
+                background: 'linear-gradient(135deg, #ffe5d0 0%, #ffd8b8 100%)',
+                borderColor: '#fd7e14',
+                iconColor: '#f57c00',
+                textColor: '#8a4100',
+                icon: 'clock outline'
+            };
+        } else {
+            // More than 1 hour - red
+            return {
+                background: 'linear-gradient(135deg, #f8d7da 0%, #f5c6cb 100%)',
+                borderColor: '#dc3545',
+                iconColor: '#dc3545',
+                textColor: '#721c24',
+                icon: 'exclamation circle'
+            };
+        }
     }
 
     saveProjectName(name: string, view?: string) {
@@ -136,7 +225,8 @@ export class EditorToolbar extends data.Component<ISettingsProps, EditorToolbarS
     }
 
     componentWillUnmount() {
-        if (this.compileTimeout) clearTimeout(this.compileTimeout)
+        if (this.compileTimeout) clearTimeout(this.compileTimeout);
+        if (this.timeUpdateInterval) clearInterval(this.timeUpdateInterval);
     }
 
     private getCollapsedState(): string {
@@ -424,7 +514,7 @@ export class EditorToolbar extends data.Component<ISettingsProps, EditorToolbarS
         }
 
         return <div id="editortools" className="ui" role="region" aria-label={lf("Editor toolbar")}>
-            <div id="downloadArea" role="menubar" className="ui column items">
+            <div id="downloadArea" role="menubar" className="ui column items" style={{ flex: '0 0 auto' }}>
                 {showCompileBtn && <div className="ui item portrait hide">
                     {this.getCompileButton(computer)}
                 </div>}
@@ -432,12 +522,106 @@ export class EditorToolbar extends data.Component<ISettingsProps, EditorToolbarS
                     {this.getCompileButton(mobile)}
                 </div>}
             </div>
-            <div id="saveArea" role="menubar" className="ui column items">
-                {showCompileBtn && <div className="ui item portrait hide">
-                    {this.getSaveButton(computer)}
+            <div id="saveArea" role="menubar" className="ui column items" style={{ flex: '1 1 auto', minWidth: 0, maxWidth: '100%' }}>
+                {showCompileBtn && <div className="ui item portrait hide" style={{ width: '100%' }}>
+                    <div style={{ display: 'flex', alignItems: 'stretch', gap: '1rem', width: '100%', maxWidth: '100%' }}>
+                        <div style={{ flex: '0 0 auto' }}>
+                            {this.getSaveButton(computer)}
+                        </div>
+                        {header && header.ctrlAltCodeCloudSyncTime && header.modificationTime && (() => {
+                            const statusStyle = this.getSyncStatusStyle(header.ctrlAltCodeCloudSyncTime, header.modificationTime);
+                            return (
+                                <div style={{
+                                    fontSize: '0.9rem',
+                                    color: statusStyle.textColor,
+                                    padding: '0.75rem 1.25rem',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    gap: '0.5rem',
+                                    background: statusStyle.background,
+                                    borderRadius: '8px',
+                                    border: `2px solid ${statusStyle.borderColor}`,
+                                    boxShadow: '0 2px 6px rgba(0, 0, 0, 0.1), 0 1px 3px rgba(0, 0, 0, 0.06)',
+                                    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                                    whiteSpace: 'nowrap',
+                                    flex: '0 1 auto',
+                                    maxWidth: '400px',
+                                    minWidth: 'fit-content',
+                                    minHeight: '100%',
+                                    fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+                                    cursor: 'default',
+                                    position: 'relative',
+                                    overflow: 'visible'
+                                }}
+                                onMouseEnter={(e) => {
+                                    e.currentTarget.style.transform = 'translateY(-1px)';
+                                    e.currentTarget.style.boxShadow = '0 5px 12px rgba(0, 0, 0, 0.15), 0 2px 4px rgba(0, 0, 0, 0.1)';
+                                }}
+                                onMouseLeave={(e) => {
+                                    e.currentTarget.style.transform = 'translateY(0)';
+                                    e.currentTarget.style.boxShadow = '0 3px 8px rgba(0, 0, 0, 0.12), 0 1px 3px rgba(0, 0, 0, 0.08)';
+                                }}
+                                >
+                                    <i className={`ui icon ${statusStyle.icon}`} style={{
+                                        margin: 0,
+                                        fontSize: '1.1rem',
+                                        color: statusStyle.iconColor,
+                                        opacity: 1,
+                                        filter: 'drop-shadow(0 1px 2px rgba(0, 0, 0, 0.1))'
+                                    }}></i>
+                                    <span style={{
+                                        fontWeight: 600,
+                                        letterSpacing: '0.015em',
+                                        color: statusStyle.textColor
+                                    }}>
+                                        {this.getOutOfDateText(header.ctrlAltCodeCloudSyncTime, header.modificationTime)}
+                                    </span>
+                                </div>
+                            );
+                        })()}
+                    </div>
                 </div>}
                 {showCompileBtn && <div className="ui portrait only">
-                    {this.getSaveButton(mobile)}
+                    <div style={{ display: 'flex', flexDirection: 'column', width: '100%' }}>
+                        {this.getSaveButton(mobile)}
+                        {header && header.ctrlAltCodeCloudSyncTime && header.modificationTime && (() => {
+                            const statusStyle = this.getSyncStatusStyle(header.ctrlAltCodeCloudSyncTime, header.modificationTime);
+                            return (
+                                <div style={{
+                                    fontSize: '0.85rem',
+                                    color: statusStyle.textColor,
+                                    marginTop: '0.625rem',
+                                    padding: '0.625rem 1rem',
+                                    textAlign: 'center',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    gap: '0.5rem',
+                                    background: statusStyle.background,
+                                    borderRadius: '8px',
+                                    border: `2px solid ${statusStyle.borderColor}`,
+                                    boxShadow: '0 2px 6px rgba(0, 0, 0, 0.1)',
+                                    fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+                                    transition: 'all 0.3s ease'
+                                }}>
+                                    <i className={`ui icon ${statusStyle.icon}`} style={{
+                                        margin: 0,
+                                        fontSize: '1rem',
+                                        color: statusStyle.iconColor,
+                                        opacity: 1
+                                    }}></i>
+                                    <span style={{
+                                        fontWeight: 600,
+                                        letterSpacing: '0.02em',
+                                        color: statusStyle.textColor
+                                    }}>
+                                        {this.getOutOfDateText(header.ctrlAltCodeCloudSyncTime, header.modificationTime)}
+                                    </span>
+                                </div>
+                            );
+                        })()}
+                    </div>
                 </div>}
             </div>
             {/* {(showProjectRename || showGithub || identity.CloudSaveStatus.wouldRender(header.id)) &&
@@ -448,9 +632,16 @@ export class EditorToolbar extends data.Component<ISettingsProps, EditorToolbarS
                         <identity.CloudSaveStatus headerId={header.id} />
                     </div>
                 </div>} */}
-            <div id="editorToolbarArea" role="menubar" className="ui column items">
-                {showUndoRedo && <div className="ui icon buttons">{this.getUndoRedo(computer)}</div>}
-                {showZoomControls && <div className="ui icon buttons mobile hide">{this.getZoomControl(computer)}</div>}
+            <div id="editorToolbarArea" role="menubar" className="ui column items" style={{
+                flex: '0 0 auto',
+                display: 'flex',
+                flexDirection: 'row',
+                gap: '0.5rem',
+                alignItems: 'center',
+                flexWrap: 'nowrap'
+            }}>
+                {showUndoRedo && <div className="ui icon buttons" style={{ flexShrink: 0 }}>{this.getUndoRedo(computer)}</div>}
+                {showZoomControls && <div className="ui icon buttons mobile hide" style={{ flexShrink: 0 }}>{this.getZoomControl(computer)}</div>}
                 {targetTheme.bigRunButton && !pxt.shell.isTimeMachineEmbed() &&
                     <div className="big-play-button-wrapper">
                         <EditorToolbarButton

@@ -2,6 +2,7 @@ import * as core from "./core";
 import * as data from "./data";
 import * as cloud from "./cloud";
 import * as workspace from "./workspace";
+import { initializeUserId, clearUserInfo } from "./ctrl-alt-code-custom/userInfo";
 
 /**
  * Virtual API keys
@@ -43,12 +44,26 @@ class AuthClient extends pxt.auth.AuthClient {
     protected async onSignedIn(): Promise<void> {
         const state = await pxt.auth.getUserStateAsync();
         core.infoNotification(lf("Signed in: {0}", pxt.auth.userName(state.profile)));
+        
+        // Refresh Ctrl-Alt-Code user info from Authentik when user signs in
+        try {
+            await initializeUserId(true); // Force refresh to get latest user info
+            console.log('✅ Ctrl-Alt-Code user info refreshed after sign-in');
+        } catch (error) {
+            console.error('⚠️ Failed to refresh Ctrl-Alt-Code user info:', error);
+        }
+        
         if (!!workspace.getWorkspaceType())
             await cloud.syncAsync();
         pxt.storage.setLocal(HAS_USED_CLOUD, "true");
     }
     protected onSignedOut(): Promise<void> {
         core.infoNotification(lf("Signed out"));
+        
+        // Clear Ctrl-Alt-Code user info when user signs out
+        clearUserInfo();
+        console.log('✅ Ctrl-Alt-Code user info cleared after sign-out');
+        
         return Promise.resolve();
     }
     protected onSignInFailed(): Promise<void> {
