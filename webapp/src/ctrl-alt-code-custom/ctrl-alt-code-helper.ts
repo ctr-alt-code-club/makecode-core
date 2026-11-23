@@ -1,5 +1,4 @@
 import * as db from "./db";
-import { getCurrentUserId } from "./userInfo";
 
 /**
  * Delete cloud projects for the current user that match a local project name.
@@ -8,12 +7,11 @@ import { getCurrentUserId } from "./userInfo";
 export async function deleteCloudProjectsByName(projectName: string): Promise<void> {
     console.log("🎮 Cloud Deleteion Initiated - " + projectName);
     try {
-        const userId = getCurrentUserId();
-        const projects = await db.getUserProjects(userId);
+        const projects = await db.getUserProjects();
         const matchingProjects = projects.filter(project => project.project_name === projectName);
 
         for (const project of matchingProjects) {
-            await db.deleteProject(project.id, userId);
+            await db.deleteProject(project.id);
         }
     } catch (error) {
         console.error(`❌ Error deleting cloud project '${projectName}':`, error);

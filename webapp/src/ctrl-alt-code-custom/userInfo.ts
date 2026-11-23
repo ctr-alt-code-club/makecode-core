@@ -1,244 +1,87 @@
 /**
- * User information management for Ctrl-Alt-Code
- * Handles authentication and user data from Authentik
+ * Who is using the arcade. The server reads the login headers nginx sets
+ * (`/api/user-info`), and the app asks it once at start, before any project
+ * loads, because each child's browser projects are kept under their ID.
+ *
+ * No copy is kept in localStorage: on a shared laptop, a failed lookup must
+ * never fall back to the last child who used it.
  */
 
-/// <reference types="node" />
-
-/**
- * Interface for user information from Authentik
- */
 export interface UserInfo {
     userId: string;
     username: string;
-    email: string;
-    groups: string;
 }
 
-/**
- * Cached user information from Authentik
- */
-let cachedUserInfo: UserInfo | null = null;
+const LOCAL_USER: UserInfo = { userId: "test-user", username: "Test User" };
 
-/**
- * Authentik authentication flow URL
- */
-const AUTHENTIK_FLOW_URL = 'https://authentik.ctrl-alt-code.uk/if/flow/ctrl-alt-code-authentication-flow/';
+// Authentik flow that ends the child's Authentik session, then goes back to
+// the arcade (which sends them to the badge page). Made by hand in the
+// Authentik admin.
+const LOGOUT_FLOW_URL = "https://authentik.ctrl-alt-code.uk/if/flow/ctrl-alt-code-arcade-logout/";
 
-/**
- * Check if running on localhost
- */
+let current: UserInfo | null = null;
+
 export function isLocalhost(): boolean {
-    return window.location.hostname === 'localhost' ||
-           window.location.hostname === '127.0.0.1' ||
-           window.location.hostname === '';
+    const host = window.location.hostname;
+    return host === "localhost" || host === "127.0.0.1";
 }
 
-/**
- * Check if user is authenticated (has valid user info)
- */
-export function isAuthenticated(): boolean {
-    if (isLocalhost()) {
-        return true; // Always authenticated on localhost
-    }
-    return cachedUserInfo !== null || localStorage.getItem('ctrlaltcode_user_info') !== null;
-}
-
-/**
- * Redirect to Authentik login flow
- */
-export function redirectToLogin(): void {
-    // Store the current URL to return to after login
-    const returnUrl = window.location.href;
-    sessionStorage.setItem('ctrlaltcode_return_url', returnUrl);
-    
-    // Redirect to Authentik
-    window.location.href = AUTHENTIK_FLOW_URL;
-}
-
-/**
- * Clear cached user information
- * Should be called when user logs out or when you want to force a refresh
- */
-export function clearUserInfo(): void {
-    cachedUserInfo = null;
-    localStorage.removeItem('ctrlaltcode_user_info');
-    console.log('🧹 User info cache cleared');
-}
-
-/**
- * Initialize user information by fetching from server (which reads Authentik headers)
- * Should be called once when the app loads, or when user logs in
- * @param forceRefresh - If true, clears cache before fetching
- */
-export async function initializeUserId(forceRefresh: boolean = false): Promise<void> {
-    if (forceRefresh) {
-        clearUserInfo();
-    }
-    
+/** Asks the server who this is. Null if it can't tell. */
+export async function loadUserAsync(): Promise<UserInfo | null> {
+    current = null;
+    // Older versions kept the last child here.
+    window.localStorage?.removeItem("ctrlaltcode_user_info");
+    if (isLocalhost()) return current = LOCAL_USER;
     try {
-        const response = await fetch('/api/user-info', {
-            // Add cache-busting to ensure fresh data
-            headers: {
-                'Cache-Control': 'no-cache',
-                'Pragma': 'no-cache'
-            }
-        });
-        if (response.ok) {
-            const userInfo: UserInfo = await response.json();
-            if (userInfo.userId) {
-                cachedUserInfo = userInfo;
-                // Store in localStorage for persistence
-                localStorage.setItem('ctrlaltcode_user_info', JSON.stringify(userInfo));
-                console.log('✅ User authenticated via Authentik:', userInfo.username, '(UID:', userInfo.userId, ')');
-            } else {
-                console.warn('⚠️ No user ID received from Authentik headers');
-            }
-        } else {
-            console.warn('⚠️ Could not fetch user info from server');
-        }
+        const response = await fetch("/api/user-info", { cache: "no-store" });
+        const user: Partial<UserInfo> = response.ok ? await response.json() : {};
+        if (user.userId) current = { userId: user.userId, username: user.username || "" };
     } catch (error) {
-        console.warn('⚠️ Error fetching user info, using fallback:', error);
+        console.warn("Could not get the user from /api/user-info:", error);
     }
+    return current;
 }
 
-/**
- * Get the current user ID
- * Returns the Authentik UID if authenticated, otherwise falls back to test-user on localhost
- */
 export function getCurrentUserId(): string {
-    // On localhost, always use test-user
-    if (isLocalhost()) {
-        return 'test-user';
-    }
-    
-    // Try cached value first (from initializeUserId)
-    if (cachedUserInfo) {
-        return cachedUserInfo.userId;
-    }
-    
-    // Try localStorage (persisted from previous session)
-    const storedUserInfo = localStorage.getItem('ctrlaltcode_user_info');
-    if (storedUserInfo) {
-        try {
-            cachedUserInfo = JSON.parse(storedUserInfo);
-            return cachedUserInfo!.userId;
-        } catch (error) {
-            console.warn('⚠️ Failed to parse stored user info:', error);
-        }
-    }
-    
-    // Not authenticated and not on localhost - user needs to log in
-    console.warn('⚠️ No authenticated user - login required');
-    return '';
+    return current?.userId ?? "";
 }
 
-/**
- * Get the current username
- * Returns the Authentik username if authenticated, otherwise falls back to 'Test User' on localhost
- */
 export function getCurrentUsername(): string {
-    // On localhost, always use Test User
-    if (isLocalhost()) {
-        return 'Test User';
-    }
-    
-    // Try cached value first
-    if (cachedUserInfo) {
-        return cachedUserInfo.username;
-    }
-    
-    // Try localStorage
-    const storedUserInfo = localStorage.getItem('ctrlaltcode_user_info');
-    if (storedUserInfo) {
-        try {
-            cachedUserInfo = JSON.parse(storedUserInfo);
-            return cachedUserInfo!.username;
-        } catch (error) {
-            console.warn('⚠️ Failed to parse stored user info:', error);
-        }
-    }
-    
-    // Not authenticated - return empty string
-    return '';
+    return current?.username ?? "";
 }
 
 /**
- * Get the current user's email
- * Returns the Authentik email if authenticated, otherwise returns empty string
+ * Logs the child out of the arcade and of Authentik, so the next child on
+ * this laptop has to scan their own badge.
  */
-export function getCurrentUserEmail(): string {
-    // Try cached value first
-    if (cachedUserInfo) {
-        return cachedUserInfo.email;
+export async function logOutAsync(): Promise<void> {
+    try {
+        // Clears the arcade's own login cookie. The answer is a redirect we
+        // don't follow: the cookie change is all we need.
+        await fetch("/outpost.goauthentik.io/sign_out", { redirect: "manual" });
+    } catch (error) {
+        console.warn("Could not clear the arcade login:", error);
     }
-    
-    // Try localStorage
-    const storedUserInfo = localStorage.getItem('ctrlaltcode_user_info');
-    if (storedUserInfo) {
-        try {
-            cachedUserInfo = JSON.parse(storedUserInfo);
-            return cachedUserInfo!.email;
-        } catch (error) {
-            console.warn('⚠️ Failed to parse stored user info:', error);
-        }
-    }
-    
-    // Fallback
-    return '';
+    window.location.href = LOGOUT_FLOW_URL;
 }
 
-/**
- * Get the current user's groups
- * Returns the Authentik groups if authenticated, otherwise returns empty string
- */
-export function getCurrentUserGroups(): string {
-    // Try cached value first
-    if (cachedUserInfo) {
-        return cachedUserInfo.groups;
-    }
-    
-    // Try localStorage
-    const storedUserInfo = localStorage.getItem('ctrlaltcode_user_info');
-    if (storedUserInfo) {
-        try {
-            cachedUserInfo = JSON.parse(storedUserInfo);
-            return cachedUserInfo!.groups;
-        } catch (error) {
-            console.warn('⚠️ Failed to parse stored user info:', error);
-        }
-    }
-    
-    // Fallback
-    return '';
-}
-
-/**
- * Get all current user information
- * Returns the complete UserInfo object if authenticated, otherwise returns fallback values
- */
-export function getCurrentUserInfo(): UserInfo {
-    // Try cached value first
-    if (cachedUserInfo) {
-        return cachedUserInfo;
-    }
-    
-    // Try localStorage
-    const storedUserInfo = localStorage.getItem('ctrlaltcode_user_info');
-    if (storedUserInfo) {
-        try {
-            cachedUserInfo = JSON.parse(storedUserInfo);
-            return cachedUserInfo!;
-        } catch (error) {
-            console.warn('⚠️ Failed to parse stored user info:', error);
-        }
-    }
-    
-    // Fallback
-    return {
-        userId: 'test-user',
-        username: 'Test User',
-        email: '',
-        groups: ''
+/** A page for when the app can't tell who is logged in. */
+export function showLoginProblem(): void {
+    const page = document.createElement("div");
+    page.style.cssText = "max-width: 32em; margin: 4em auto; padding: 0 1em; font-family: sans-serif;";
+    const add = (tag: string, text: string, parent: HTMLElement = page) => {
+        const element = parent.appendChild(document.createElement(tag));
+        element.textContent = text;
+        return element;
     };
+    add("h1", "We couldn't check who you are");
+    add("p", "Please try again. If it keeps happening, ask a club leader for help.");
+    const retry = add("a", "Try again", add("p", "")) as HTMLAnchorElement;
+    retry.href = "/";
+    retry.className = "ui primary button";
+    const details = add("details", "");
+    add("summary", "Details", details);
+    add("p", "/api/user-info didn't return a user ID, so no projects were loaded.", details);
+    document.body.textContent = "";
+    document.body.appendChild(page);
 }

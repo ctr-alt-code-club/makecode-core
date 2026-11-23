@@ -1124,30 +1124,11 @@ export function serveAsync(options: ServeOptions) {
                 return await handleApiStoreRequestAsync(req, res, elts.slice(2));
             }
 
-            if (elts[1] == "debug-headers") {
-                // Access from https://arcade.ctrl-alt-code.uk/api/debug-headers
-                res.writeHead(200, { 'Content-Type': 'application/json' });
-                res.end(JSON.stringify({
-                    allHeaders: req.headers,
-                    authentikHeaders: {
-                        username: req.headers['x-authentik-username'],
-                        email: req.headers['x-authentik-email'],
-                        uid: req.headers['x-authentik-uid'],
-                        groups: req.headers['x-authentik-groups'],
-                        forwardedUser: req.headers['x-forwarded-user'],
-                        forwardedEmail: req.headers['x-forwarded-email']
-                    }
-                }, null, 2));
-                return;
-            }
-
             if (elts[1] == "user-info") {
                 // Return user info from Authentik headers
                 const userInfo = {
                     userId: req.headers['x-authentik-uid'] as string || null,
-                    username: req.headers['x-authentik-username'] as string || null,
-                    email: req.headers['x-authentik-email'] as string || null,
-                    groups: req.headers['x-authentik-groups'] as string || null
+                    username: req.headers['x-authentik-username'] as string || null
                 };
                 
                 res.writeHead(200, {

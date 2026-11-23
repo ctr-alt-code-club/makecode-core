@@ -1,34 +1,15 @@
 /**
- * Database API client for Ctrl-Alt-Code cloud storage
- * Provides functions to interact with the makecode-store backend API
+ * Cloud save, through makecode-store at /cloud/projects on this same site.
+ * The store knows who is asking from the login, so no user ID is sent.
  */
 
-/// <reference types="node" />
-
-/**
- * Configuration for the API endpoint
- * Update this to match your deployed API URL
- * Can be set via environment variable or runtime configuration
- */
-let API_BASE_URL = (typeof process !== 'undefined' && process.env && process.env.API_BASE_URL)
-    ? process.env.API_BASE_URL
-    : 'https://arcade-store.ctrl-alt-code.uk';
-
-/**
- * Interface for project data stored in the database
- */
 export interface DbProjectRecord {
-    id?: number;
-    userId: string;
+    id: number;
     projectName: string;
     projectData: string;  // Base64 encoded Uint8Array
-    createdAt?: string;
-    updatedAt?: string;
+    createdAt: string;
 }
 
-/**
- * Interface for project list item (without full data)
- */
 export interface DbProjectListItem {
     id: number;
     project_name: string;
@@ -36,224 +17,43 @@ export interface DbProjectListItem {
     updated_at: string;
 }
 
-/**
- * Save a project to the cloud database
- * @param userId - The user's unique identifier
- * @param projectName - The name of the project
- * @param projectData - Base64 encoded project data
- * @returns Promise with the saved project ID and timestamp
- */
-export async function saveProject(
-    userId: string,
-    projectName: string,
-    projectData: string
-): Promise<{ success: boolean; id: number; createdAt: string }> {
-    try {
-        const response = await fetch(`${API_BASE_URL}/api/projects`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                userId,
-                projectName,
-                projectData
-            })
-        });
+const PROJECTS_URL = "/cloud/projects";
 
-        if (!response.ok) {
-            const error = await response.json();
-            throw new Error(error.error || 'Failed to save project');
-        }
-
-        const result = await response.json();
-        console.log('✅ Project saved to cloud:', result);
-        return result;
-    } catch (error) {
-        console.error('❌ Error saving project to cloud:', error);
-        throw error;
+async function callStoreAsync<T>(path: string, init?: RequestInit): Promise<T> {
+    const response = await fetch(PROJECTS_URL + path, {
+        ...init,
+        headers: { "Content-Type": "application/json" },
+    });
+    if (response.status === 401) {
+        throw new Error("Your login has run out. Reload the page and log in again.");
     }
-}
-
-/**
- * Get all projects for a specific user
- * @param userId - The user's unique identifier
- * @returns Promise with array of project list items (without full data)
- */
-export async function getUserProjects(userId: string): Promise<DbProjectListItem[]> {
-    try {
-        const response = await fetch(`${API_BASE_URL}/api/projects/user/${encodeURIComponent(userId)}`, {
-            method: 'GET',
-            headers: {
-                'Content-Type': 'application/json',
-            }
-        });
-
-        if (!response.ok) {
-            const error = await response.json();
-            throw new Error(error.error || 'Failed to fetch projects');
-        }
-
-        const projects = await response.json();
-        console.log(`📋 Fetched ${projects.length} projects for user ${userId}`);
-        return projects;
-    } catch (error) {
-        console.error('❌ Error fetching user projects:', error);
-        throw error;
+    const body = await response.json().catch((): null => null);
+    if (!response.ok) {
+        throw new Error(body?.error || `The cloud save didn't work (error ${response.status}).`);
     }
+    return body as T;
 }
 
-/**
- * Get a single project with full data
- * @param projectId - The project's database ID
- * @param userId - The user's unique identifier (for authorization)
- * @returns Promise with the complete project data
- */
-export async function getProject(projectId: number, userId: string): Promise<DbProjectRecord> {
-    try {
-        const response = await fetch(
-            `${API_BASE_URL}/api/projects/${projectId}?userId=${encodeURIComponent(userId)}`,
-            {
-                method: 'GET',
-                headers: {
-                    'Content-Type': 'application/json',
-                }
-            }
-        );
-
-        if (!response.ok) {
-            const error = await response.json();
-            throw new Error(error.error || 'Failed to fetch project');
-        }
-
-        const project = await response.json();
-        console.log(`📥 Fetched project ${projectId}:`, project.project_name);
-        return {
-            id: project.id,
-            userId: project.user_id,
-            projectName: project.project_name,
-            projectData: project.project_data,
-            createdAt: project.created_at,
-            updatedAt: project.updated_at
-        };
-    } catch (error) {
-        console.error(`❌ Error fetching project ${projectId}:`, error);
-        throw error;
-    }
+/** Saves the project with this name: updates it, or adds it. */
+export function saveProject(projectName: string, projectData: string): Promise<{ success: boolean; id: number; createdAt: string }> {
+    return callStoreAsync("", { method: "POST", body: JSON.stringify({ projectName, projectData }) });
 }
 
-/**
- * Update an existing project
- * @param projectId - The project's database ID
- * @param userId - The user's unique identifier (for authorization)
- * @param projectName - Optional new project name
- * @param projectData - Optional new project data (Base64 encoded)
- * @returns Promise with the updated project info
- */
-export async function updateProject(
-    projectId: number,
-    userId: string,
-    projectName?: string,
-    projectData?: string
-): Promise<{ success: boolean; id: number; updatedAt: string }> {
-    try {
-        const response = await fetch(`${API_BASE_URL}/api/projects/${projectId}`, {
-            method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                userId,
-                projectName,
-                projectData
-            })
-        });
-
-        if (!response.ok) {
-            const error = await response.json();
-            throw new Error(error.error || 'Failed to update project');
-        }
-
-        const result = await response.json();
-        console.log(`✅ Project ${projectId} updated:`, result);
-        return result;
-    } catch (error) {
-        console.error(`❌ Error updating project ${projectId}:`, error);
-        throw error;
-    }
+/** The child's projects, newest first, without their data. */
+export function getUserProjects(): Promise<DbProjectListItem[]> {
+    return callStoreAsync("");
 }
 
-/**
- * Delete a project from the cloud
- * @param projectId - The project's database ID
- * @param userId - The user's unique identifier (for authorization)
- * @returns Promise with success status
- */
-export async function deleteProject(projectId: number, userId: string): Promise<{ success: boolean; id: number }> {
-    try {
-        const response = await fetch(
-            `${API_BASE_URL}/api/projects/${projectId}?userId=${encodeURIComponent(userId)}`,
-            {
-                method: 'DELETE',
-                headers: {
-                    'Content-Type': 'application/json',
-                }
-            }
-        );
-
-        if (!response.ok) {
-            const error = await response.json();
-            throw new Error(error.error || 'Failed to delete project');
-        }
-
-        const result = await response.json();
-        console.log(`🗑️  Project ${projectId} deleted`);
-        return result;
-    } catch (error) {
-        console.error(`❌ Error deleting project ${projectId}:`, error);
-        throw error;
-    }
+export async function getProject(projectId: number): Promise<DbProjectRecord> {
+    const project = await callStoreAsync<{ id: number; project_name: string; project_data: string; created_at: string }>(`/${projectId}`);
+    return {
+        id: project.id,
+        projectName: project.project_name,
+        projectData: project.project_data,
+        createdAt: project.created_at,
+    };
 }
 
-/**
- * Check if the API is available
- * @returns Promise with health status
- */
-export async function checkApiHealth(): Promise<{ status: string; timestamp: string }> {
-    try {
-        const response = await fetch(`${API_BASE_URL}/health`, {
-            method: 'GET',
-            headers: {
-                'Content-Type': 'application/json',
-            }
-        });
-
-        if (!response.ok) {
-            throw new Error('API health check failed');
-        }
-
-        const health = await response.json();
-        console.log('✅ API is healthy:', health);
-        return health;
-    } catch (error) {
-        console.error('❌ API health check failed:', error);
-        throw error;
-    }
-}
-
-/**
- * Set the API base URL (useful for different environments)
- * @param url - The base URL for the API
- */
-export function setApiBaseUrl(url: string): void {
-    API_BASE_URL = url;
-    console.log('🔧 API base URL set to:', url);
-}
-
-/**
- * Get the current API base URL
- * @returns The current API base URL
- */
-export function getApiBaseUrl(): string {
-    return API_BASE_URL;
+export function deleteProject(projectId: number): Promise<{ success: boolean; id: number }> {
+    return callStoreAsync(`/${projectId}`, { method: "DELETE" });
 }

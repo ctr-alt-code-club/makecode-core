@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+# A secret scan of what you're about to commit, so commits stay fast.
+# `make check` runs on push. Turn the hooks on once per clone with:
+#   git config core.hooksPath githooks
+exec ../development/checks/common --pre-commit

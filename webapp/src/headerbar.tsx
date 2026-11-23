@@ -16,7 +16,7 @@ import ISettingsProps = pxt.editor.ISettingsProps;
 import { ThemeManager } from "../../react-common/components/theming/themeManager";
 import { Button } from "../../react-common/components/controls/Button";
 
-import { getCurrentUsername } from "./ctrl-alt-code-custom/userInfo";
+import { getCurrentUsername, logOutAsync } from "./ctrl-alt-code-custom/userInfo";
 
 type HeaderBarView = "home" | "editor" | "tutorial" | "tutorial-tab" | "debugging" | "sandbox" | "time-machine";
 const LONGPRESS_DURATION = 750;
@@ -302,12 +302,14 @@ export class HeaderBar extends data.Component<ISettingsProps, {}> {
                 <div className="ui item username-display" style={{
                     display: 'flex',
                     alignItems: 'center',
+                    gap: '0.75em',
                     padding: '0 1em',
                     fontWeight: 500,
                     fontSize: '1.1em'
                 }}>
-                    <i className="user icon" style={{ marginRight: '0.5em' }}></i>
+                    <i className="user icon"></i>
                     <span>{getCurrentUsername()}</span>
+                    <sui.Button size="mini" text={lf("Log out")} title={lf("Log out, so the next person can scan their badge")} onClick={logOutAsync} />
                 </div>
                 {view === "tutorial"
                     // TODO: temporary place for tutorial name, we will eventually redesign the header for tutorial view

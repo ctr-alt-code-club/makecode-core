@@ -1,3 +1,6 @@
+import { workspaceDbName } from "./ctrl-alt-code-custom/childDb";
+import { getCurrentUserId } from "./ctrl-alt-code-custom/userInfo";
+
 type Header = pxt.workspace.Header;
 type ScriptText = pxt.workspace.ScriptText;
 type WorkspaceProvider = pxt.workspace.WorkspaceProvider;
@@ -30,6 +33,8 @@ const GITHUB_TUTORIAL_CACHE_EXPIRATION_MILLIS = 60 * 60 * 1000;
 
 let _migrationPromise: Promise<void>;
 async function performMigrationsAsync() {
+    // They copy projects from older, shared databases: never into a child's.
+    if (getCurrentUserId()) return;
     if (!_migrationPromise) {
         _migrationPromise = (async () => {
             try {
@@ -260,14 +265,16 @@ async function migratePrefixesAsync() {
 let _dbPromises: pxt.Map<Promise<pxt.BrowserUtils.IDBWrapper>> = {};
 
 async function getDbAsync(prefix = "__default") {
-    if (_dbPromises[prefix]) return _dbPromises[prefix];
+    // Cached by full name, so one opened before the child was known is never reused for them.
+    const name = workspaceDbName(pxt.storage.storageId(), getCurrentUserId(), prefix);
+    if (_dbPromises[name]) return _dbPromises[name];
 
-    _dbPromises[prefix] = createDbAsync();
+    _dbPromises[name] = createDbAsync();
 
-    return _dbPromises[prefix];
+    return _dbPromises[name];
 
     async function createDbAsync(): Promise<pxt.BrowserUtils.IDBWrapper> {
-        const idbDb = new pxt.BrowserUtils.IDBWrapper(`__pxt_idb_workspace_${pxt.storage.storageId()}_${prefix}`, 1, (ev, r) => {
+        const idbDb = new pxt.BrowserUtils.IDBWrapper(name, 1, (ev, r) => {
             const db = r.result as IDBDatabase;
             db.createObjectStore(TEXTS_TABLE, { keyPath: KEYPATH });
             db.createObjectStore(HEADERS_TABLE, { keyPath: KEYPATH });
