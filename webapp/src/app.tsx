@@ -89,7 +89,7 @@ import { ThemeManager } from "../../react-common/components/theming/themeManager
 import { applyPolyfills } from "./polyfills";
 import { sendUpdateFeedbackTheme } from "../../react-common/components/controls/Feedback/FeedbackEventListener";
 import { deleteCloudProjectsByName } from "./ctrl-alt-code-custom/ctrl-alt-code-helper";
-import { initializeUserId } from "./ctrl-alt-code-custom/userInfo";
+import { isLocalhost, loadUserAsync, showLoginProblem } from "./ctrl-alt-code-custom/userInfo";
 import { syncFromCloud } from "./ctrl-alt-code-custom/syncFromCloud";
 
 pxt.blocks.requirePxtBlockly = () => pxtblockly as any;
@@ -1127,22 +1127,12 @@ export class ProjectView
 
     public async componentDidMount() {
         this.allEditors.forEach(e => e.prepare())
-        
-        // Initialize user ID from Authentik headers
-        initializeUserId()
-            .then(() => {
-                console.log('✅ User initialized successfully, triggering cloud sync...');
-                // Trigger cloud sync after successful user initialization
-                syncFromCloud().catch((err: any) => {
-                    console.error('Failed to sync from cloud:', err);
-                });
-                // Force re-render to update header bar with username
-                this.forceUpdate();
-            })
-            .catch((err: any) => {
-                console.error('Failed to initialize user ID from Authentik:', err);
-            });
-        
+
+        // The child was loaded before the workspace (see the start-up code).
+        syncFromCloud().catch((err: any) => {
+            console.error('Failed to sync from cloud:', err);
+        });
+
         await simulator.initAsync(getBoardView(), {
             orphanException: brk => {
                 // TODO: start debugging session
@@ -6372,7 +6362,15 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     const isSandbox = pxt.shell.isSandboxMode() || pxt.shell.isReadOnly();
 
-    if (query["ws"]) workspace.setupWorkspace(query["ws"]);
+    // Each child's browser projects are kept under their ID, so it must be
+    // known before the workspace opens. Without it, nothing loads.
+    if (!await loadUserAsync()) {
+        showLoginProblem();
+        return;
+    }
+
+    // ?ws= could pick a workspace that isn't kept per child, so only for development.
+    if (query["ws"] && isLocalhost()) workspace.setupWorkspace(query["ws"]);
     else if (isControllerIFrame) workspace.setupWorkspace("iframe");
     else if (isSandbox) workspace.setupWorkspace("mem");
     else if (pxt.BrowserUtils.isIpcRenderer()) workspace.setupWorkspace("idb");

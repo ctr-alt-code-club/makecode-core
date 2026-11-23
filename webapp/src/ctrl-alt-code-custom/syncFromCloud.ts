@@ -3,7 +3,6 @@ import * as workspace from "../workspace";
 import * as core from "../core";
 import * as db from "./db";
 import { base64ToUint8Array } from "./cloudSaveButton";
-import { getCurrentUserId } from "./userInfo";
 
 /**
  * Interface for cloud project data
@@ -23,11 +22,7 @@ export async function syncFromCloud(): Promise<void> {
     console.log("🔄 Starting cloud sync...");
 
     try {
-        // Get current user ID
-        const userId = getCurrentUserId();
-
-        // Fetch all user's projects from cloud
-        const allCloudProjects = await db.getUserProjects(userId);
+        const allCloudProjects = await db.getUserProjects();
 
         if (allCloudProjects.length === 0) {
             console.log("📭 No cloud projects found");
@@ -54,7 +49,7 @@ export async function syncFromCloud(): Promise<void> {
         for (const projectInfo of cloudProjects) {
             try {
                 // Fetch full project data
-                const fullProject = await db.getProject(projectInfo.id, userId);
+                const fullProject = await db.getProject(projectInfo.id);
 
                 const cloudData: CloudProjectData = {
                     projectName: fullProject.projectName,

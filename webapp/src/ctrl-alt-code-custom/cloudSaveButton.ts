@@ -5,7 +5,6 @@
 
 import * as db from "./db";
 import * as core from "../core";
-import { getCurrentUserId } from "./userInfo";
 
 /**
  * Convert Uint8Array to Base64 string using MakeCode's encoding
@@ -38,11 +37,7 @@ export async function handleCloudSaveWithData(projectName: string, projectData: 
         const base64Data = uint8ArrayToBase64(projectData);
         console.log("🔐 Base64 Size:", base64Data.length, "characters");
 
-        // Get current user ID
-        const userId = getCurrentUserId();
-
-        // Save to cloud database
-        const result = await db.saveProject(userId, projectName, base64Data);
+        const result = await db.saveProject(projectName, base64Data);
 
         console.log("✅ Project saved to cloud:", result);
         core.infoNotification(lf("Project '{0}' saved to cloud!", projectName));
