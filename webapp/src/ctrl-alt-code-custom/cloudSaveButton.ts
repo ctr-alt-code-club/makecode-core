@@ -32,48 +32,48 @@ export function base64ToUint8Array(base64: string): Uint8Array {
  */
 export async function handleCloudSaveWithData(projectName: string, projectData: Uint8Array, header?: pxt.workspace.Header): Promise<void> {
     console.log("🎮 Cloud Save Initiated");
-    
+
     try {
         // Convert Uint8Array to Base64 for storage/transmission
         const base64Data = uint8ArrayToBase64(projectData);
         console.log("🔐 Base64 Size:", base64Data.length, "characters");
-        
+
         // Get current user ID
         const userId = getCurrentUserId();
-        
+
         // Save to cloud database
         const result = await db.saveProject(userId, projectName, base64Data);
-        
+
         console.log("✅ Project saved to cloud:", result);
         core.infoNotification(lf("Project '{0}' saved to cloud!", projectName));
-        
+
         // Store the cloud sync timestamp in the project header
         if (header) {
             const workspace = await import("../workspace");
             const data = await import("../data");
-            
+
             // Get the actual header from workspace to ensure we have the right session
             const headers = workspace.getHeaders();
             const actualHeader = headers.find(h => h.id === header.id);
-            
+
             if (actualHeader) {
                 // Acquire session for this header to avoid conflicts
                 workspace.acquireHeaderSession(actualHeader);
-                
+
                 // Update both cloud sync time and modification time to now
                 // This ensures the card doesn't show as "outdated" after saving
                 const now = pxt.Util.nowSeconds();
                 actualHeader.ctrlAltCodeCloudSyncTime = now;
                 actualHeader.modificationTime = now;
-                
+
                 // Save with fromCloudSync=true to prevent automatic modificationTime update
                 await workspace.saveAsync(actualHeader, undefined, true);
-                
+
                 // Invalidate the data cache to force UI refresh
                 data.invalidate(`header:${actualHeader.id}`);
             }
         }
-        
+
     } catch (error) {
         const errorMsg = error instanceof Error ? error.message : String(error);
         console.error("❌ Error saving to cloud:", error);

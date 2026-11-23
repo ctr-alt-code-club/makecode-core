@@ -51,7 +51,7 @@ export function redirectToLogin(): void {
     // Store the current URL to return to after login
     const returnUrl = window.location.href;
     sessionStorage.setItem('ctrlaltcode_return_url', returnUrl);
-    
+
     // Redirect to Authentik
     window.location.href = AUTHENTIK_FLOW_URL;
 }
@@ -75,7 +75,7 @@ export async function initializeUserId(forceRefresh: boolean = false): Promise<v
     if (forceRefresh) {
         clearUserInfo();
     }
-    
+
     try {
         const response = await fetch('/api/user-info', {
             // Add cache-busting to ensure fresh data
@@ -111,12 +111,12 @@ export function getCurrentUserId(): string {
     if (isLocalhost()) {
         return 'test-user';
     }
-    
+
     // Try cached value first (from initializeUserId)
     if (cachedUserInfo) {
         return cachedUserInfo.userId;
     }
-    
+
     // Try localStorage (persisted from previous session)
     const storedUserInfo = localStorage.getItem('ctrlaltcode_user_info');
     if (storedUserInfo) {
@@ -127,7 +127,7 @@ export function getCurrentUserId(): string {
             console.warn('⚠️ Failed to parse stored user info:', error);
         }
     }
-    
+
     // Not authenticated and not on localhost - user needs to log in
     console.warn('⚠️ No authenticated user - login required');
     return '';
@@ -142,12 +142,12 @@ export function getCurrentUsername(): string {
     if (isLocalhost()) {
         return 'Test User';
     }
-    
+
     // Try cached value first
     if (cachedUserInfo) {
         return cachedUserInfo.username;
     }
-    
+
     // Try localStorage
     const storedUserInfo = localStorage.getItem('ctrlaltcode_user_info');
     if (storedUserInfo) {
@@ -158,7 +158,7 @@ export function getCurrentUsername(): string {
             console.warn('⚠️ Failed to parse stored user info:', error);
         }
     }
-    
+
     // Not authenticated - return empty string
     return '';
 }
@@ -172,7 +172,7 @@ export function getCurrentUserEmail(): string {
     if (cachedUserInfo) {
         return cachedUserInfo.email;
     }
-    
+
     // Try localStorage
     const storedUserInfo = localStorage.getItem('ctrlaltcode_user_info');
     if (storedUserInfo) {
@@ -183,7 +183,7 @@ export function getCurrentUserEmail(): string {
             console.warn('⚠️ Failed to parse stored user info:', error);
         }
     }
-    
+
     // Fallback
     return '';
 }
@@ -197,7 +197,7 @@ export function getCurrentUserGroups(): string {
     if (cachedUserInfo) {
         return cachedUserInfo.groups;
     }
-    
+
     // Try localStorage
     const storedUserInfo = localStorage.getItem('ctrlaltcode_user_info');
     if (storedUserInfo) {
@@ -208,7 +208,7 @@ export function getCurrentUserGroups(): string {
             console.warn('⚠️ Failed to parse stored user info:', error);
         }
     }
-    
+
     // Fallback
     return '';
 }
@@ -222,7 +222,7 @@ export function getCurrentUserInfo(): UserInfo {
     if (cachedUserInfo) {
         return cachedUserInfo;
     }
-    
+
     // Try localStorage
     const storedUserInfo = localStorage.getItem('ctrlaltcode_user_info');
     if (storedUserInfo) {
@@ -233,7 +233,7 @@ export function getCurrentUserInfo(): UserInfo {
             console.warn('⚠️ Failed to parse stored user info:', error);
         }
     }
-    
+
     // Fallback
     return {
         userId: 'test-user',

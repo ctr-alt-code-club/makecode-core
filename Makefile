@@ -59,3 +59,16 @@ cli:
 worker:
 	@$(MAKE) -j8 built/web/pxtworker.js
 	@$(MAKE) built/web/pxtworker.js
+
+# Ctrl Alt Code's check (development/WORKFLOW.md): our own code only.
+# Microsoft's tests need the full build (`gulp travis`).
+export CHECK_START := $(shell date +%s)
+T := ../development/checks/timed
+CLUB := webapp/src/ctrl-alt-code-custom
+
+check:
+	$(T) "Standard checks" ../development/checks/common --fork
+	$(T) "Types" node node_modules/typescript/bin/tsc -p webapp --noEmit
+	$(T) "Lint" node node_modules/eslint/bin/eslint.js -c .eslintrc.js --ext .ts,.tsx --max-warnings 0 $(CLUB)
+
+.PHONY: check

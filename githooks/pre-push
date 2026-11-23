@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+# Full check before anything reaches GitHub. Inside the Flatpak sandbox
+# it runs on the host, which has the tools.
+exec ../development/checks/host --always make check
