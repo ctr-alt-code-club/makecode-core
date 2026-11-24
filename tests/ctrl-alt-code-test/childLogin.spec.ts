@@ -64,7 +64,7 @@ describe("who is logged in", () => {
         replies = [{ status: 302 }];
         await logOutAsync();
         expect(calls.map(c => c.url)).to.deep.equal(["/outpost.goauthentik.io/sign_out"]);
-        expect((globalThis as any).window.location.href).to.contain("/if/flow/ctrl-alt-code-arcade-logout/");
+        expect((globalThis as any).window.location.href).to.equal("https://authentik.ctrl-alt-code.uk/flows/-/default/invalidation/");
     });
 });
 

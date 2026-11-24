@@ -28,9 +28,9 @@ they come back logged in. Plan: `makecode-store/docs/login-plan.md`.
 ## Log out
 
 The Log out button next to the child's name clears the arcade's login
-(`/outpost.goauthentik.io/sign_out`), then opens the Authentik flow
-`ctrl-alt-code-arcade-logout`, which ends the Authentik session and goes
-back to the arcade. The next child on the laptop has to scan their badge.
+(`/outpost.goauthentik.io/sign_out`), then opens Authentik's default logout
+flow (`/flows/-/default/invalidation/`), which ends the Authentik session.
+The next child on the laptop has to scan their badge.
 
 ## Tests
 
