@@ -14,10 +14,9 @@ export interface UserInfo {
 
 const LOCAL_USER: UserInfo = { userId: "test-user", username: "Test User" };
 
-// Authentik flow that ends the child's Authentik session, then goes back to
-// the arcade (which sends them to the badge page). Made by hand in the
-// Authentik admin.
-const LOGOUT_FLOW_URL = "https://authentik.ctrl-alt-code.uk/if/flow/ctrl-alt-code-arcade-logout/";
+// Authentik's own log-out link: it opens the brand's default logout flow,
+// which ends the child's Authentik session.
+const LOGOUT_FLOW_URL = "https://authentik.ctrl-alt-code.uk/flows/-/default/invalidation/";
 
 let current: UserInfo | null = null;
 
